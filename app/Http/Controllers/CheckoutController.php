@@ -19,7 +19,7 @@ class CheckoutController extends Controller
     {
         // 1. Validate token exists
         if (!$request->has('token')) {
-            return redirect()->route('courses.index')
+            return redirect()->route('courses.catalog')
                 ->with('error', 'Invalid checkout link. Please select a course first.');
         }
 
@@ -27,19 +27,19 @@ class CheckoutController extends Controller
         try {
             $payload = Crypt::decrypt($request->token);
         } catch (\Exception $e) {
-            return redirect()->route('courses.index')
+            return redirect()->route('courses.catalog')
                 ->with('error', 'This checkout link is invalid or has expired.');
         }
 
         // 3. Validate token contents
         if (!isset($payload['course_id']) || !isset($payload['type'])) {
-            return redirect()->route('courses.index')
+            return redirect()->route('courses.catalog')
                 ->with('error', 'Invalid checkout data.');
         }
 
         // 4. Check token freshness (prevent replay attacks — token valid for 1 hour)
         if (isset($payload['timestamp']) && (now()->timestamp - $payload['timestamp'] > 3600)) {
-            return redirect()->route('courses.index')
+            return redirect()->route('courses.catalog')
                 ->with('error', 'This checkout link has expired. Please return to the course page and try again.');
         }
 
@@ -49,7 +49,7 @@ class CheckoutController extends Controller
         // 6. Validate learning type
         $learningType = $payload['type'];
         if (!in_array($learningType, ['inclass', 'sync', 'async'])) {
-            return redirect()->route('courses.index')
+            return redirect()->route('courses.catalog')
                 ->with('error', 'Invalid learning type.');
         }
 

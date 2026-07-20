@@ -41,7 +41,7 @@ class CourseController extends Controller
 
         Course::create([
             'title'             => $validated['title'],
-            'slug'              => Str::slug($validated['title']),
+            'slug'              => $this->uniqueSlug($validated['title']),
             'short_description' => $validated['short_description'],
             'full_description'  => $validated['full_description'],
             'price'             => $validated['price'],
@@ -78,7 +78,7 @@ class CourseController extends Controller
             $validated['thumbnail_path'] = $request->file('thumbnail')->store('course-thumbnails', 'public');
         }
 
-        $validated['slug'] = Str::slug($validated['title']);
+        $validated['slug'] = $this->uniqueSlug($validated['title'], $course->id);
         $validated['is_published'] = $request->has('is_published');
 
         $course->update($validated);
@@ -93,6 +93,27 @@ class CourseController extends Controller
 
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course deleted successfully.');
+    }
+
+    /**
+     * Generate a URL slug from a title that is unique across courses.
+     * Appends -2, -3, … on collision. Ignores the course being updated.
+     */
+    private function uniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title);
+        $slug = $base;
+        $suffix = 2;
+
+        while (Course::where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()
+        ) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     /**
