@@ -99,7 +99,7 @@
                     @if($lesson->content_type === 'video')
                         <div class="bg-black rounded-lg overflow-hidden mb-6">
                             <video controls class="w-full" style="max-height: 500px;">
-                                <source src="{{ asset('storage/' . $lesson->content_path) }}" type="video/mp4">
+                                <source src="{{ Str::startsWith($lesson->content_path, 'http') ? $lesson->content_path : route('lesson.content', [$course->slug, $lesson->id]) }}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                         </div>
@@ -108,7 +108,7 @@
                     {{-- Image Content --}}
                     @if($lesson->content_type === 'image')
                         <div class="bg-white rounded-lg overflow-hidden mb-6">
-                            <img src="{{ asset('storage/' . $lesson->content_path) }}" alt="{{ $lesson->title }}" class="w-full">
+                            <img src="{{ Str::startsWith($lesson->content_path, 'http') ? $lesson->content_path : route('lesson.content', [$course->slug, $lesson->id]) }}" alt="{{ $lesson->title }}" class="w-full">
                         </div>
                     @endif
 

@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\EnrollmentConfirmation;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class CheckoutTest extends TestCase
@@ -18,7 +20,7 @@ class CheckoutTest extends TestCase
     {
         return Crypt::encrypt([
             'course_id' => $course->id,
-            'type'      => $type,
+            'type' => $type,
             'timestamp' => $timestamp ?? now()->timestamp,
         ]);
     }
@@ -43,7 +45,7 @@ class CheckoutTest extends TestCase
         $course = Course::factory()->create();
         $expired = $this->token($course, 'async', now()->subHours(2)->timestamp);
 
-        $this->get('/checkout?token=' . urlencode($expired))
+        $this->get('/checkout?token='.urlencode($expired))
             ->assertRedirect(route('courses.catalog'))
             ->assertSessionHas('error');
     }
@@ -52,7 +54,7 @@ class CheckoutTest extends TestCase
     {
         $course = Course::factory()->create();
 
-        $this->get('/checkout?token=' . urlencode($this->token($course)))
+        $this->get('/checkout?token='.urlencode($this->token($course)))
             ->assertRedirectContains('/register');
     }
 
@@ -62,7 +64,7 @@ class CheckoutTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->get('/checkout?token=' . urlencode($this->token($course, 'async')))
+            ->get('/checkout?token='.urlencode($this->token($course, 'async')))
             ->assertOk()
             ->assertViewIs('checkout.show')
             ->assertSee($course->title);
@@ -76,27 +78,76 @@ class CheckoutTest extends TestCase
         // async price = 100000 - 25000 + 4000 = 79000
         $response = $this->actingAs($user)
             ->withSession([
-                'checkout_course_id'     => $course->id,
+                'checkout_course_id' => $course->id,
                 'checkout_learning_type' => 'async',
-                'checkout_price'         => 79000,
+                'checkout_price' => 79000,
             ])
             ->post('/checkout/pay');
 
         $response->assertRedirect(route('student.courses'));
 
         $this->assertDatabaseHas('payments', [
-            'user_id'   => $user->id,
+            'user_id' => $user->id,
             'course_id' => $course->id,
-            'status'    => 'successful',
-            'amount'    => 79000,
+            'status' => 'successful',
+            'amount' => 79000,
         ]);
 
         $this->assertDatabaseHas('enrollments', [
-            'user_id'       => $user->id,
-            'course_id'     => $course->id,
+            'user_id' => $user->id,
+            'course_id' => $course->id,
             'learning_type' => 'async',
-            'status'        => 'active',
+            'status' => 'active',
         ]);
+    }
+
+    public function test_enrollment_sends_confirmation_email(): void
+    {
+        Mail::fake();
+
+        $course = Course::factory()->create(['price' => 100000]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withSession([
+                'checkout_course_id' => $course->id,
+                'checkout_learning_type' => 'async',
+                'checkout_price' => 79000,
+            ])
+            ->post('/checkout/pay');
+
+        Mail::assertSent(EnrollmentConfirmation::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
+        });
+    }
+
+    public function test_enrollment_email_template_renders(): void
+    {
+        $enrollment = Enrollment::factory()->create();
+
+        $html = (new EnrollmentConfirmation($enrollment))->render();
+
+        $this->assertStringContainsString($enrollment->course->title, $html);
+        $this->assertStringContainsString($enrollment->user->name, $html);
+    }
+
+    public function test_payment_is_linked_to_enrollment(): void
+    {
+        $course = Course::factory()->create(['price' => 100000]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withSession([
+                'checkout_course_id' => $course->id,
+                'checkout_learning_type' => 'async',
+                'checkout_price' => 79000,
+            ])
+            ->post('/checkout/pay');
+
+        $payment = Payment::where('user_id', $user->id)->firstOrFail();
+        $enrollment = Enrollment::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertSame($enrollment->id, $payment->enrollment_id);
     }
 
     public function test_inclass_payment_redirects_to_receipt(): void
@@ -106,9 +157,9 @@ class CheckoutTest extends TestCase
 
         $response = $this->actingAs($user)
             ->withSession([
-                'checkout_course_id'     => $course->id,
+                'checkout_course_id' => $course->id,
                 'checkout_learning_type' => 'inclass',
-                'checkout_price'         => 104000,
+                'checkout_price' => 104000,
             ])
             ->post('/checkout/pay');
 
@@ -121,16 +172,16 @@ class CheckoutTest extends TestCase
         $course = Course::factory()->create();
         $user = User::factory()->create();
         Enrollment::factory()->create([
-            'user_id'       => $user->id,
-            'course_id'     => $course->id,
+            'user_id' => $user->id,
+            'course_id' => $course->id,
             'learning_type' => 'async',
         ]);
 
         $this->actingAs($user)
             ->withSession([
-                'checkout_course_id'     => $course->id,
+                'checkout_course_id' => $course->id,
                 'checkout_learning_type' => 'async',
-                'checkout_price'         => 79000,
+                'checkout_price' => 79000,
             ])
             ->post('/checkout/pay')
             ->assertRedirect(route('student.courses'));

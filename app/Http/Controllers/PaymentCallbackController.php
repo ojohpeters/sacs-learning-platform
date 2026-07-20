@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EnrollmentConfirmation;
 use App\Models\Enrollment;
 use App\Models\Payment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class PaymentCallbackController extends Controller
 {
@@ -14,8 +16,8 @@ class PaymentCallbackController extends Controller
     public function handle(Request $request)
     {
         $reference = $request->get('reference');
-        
-        if (!$reference) {
+
+        if (! $reference) {
             return redirect()->route('student.courses')
                 ->with('error', 'No payment reference found.');
         }
@@ -23,7 +25,7 @@ class PaymentCallbackController extends Controller
         // Find the payment record
         $payment = Payment::where('transaction_reference', $reference)->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return redirect()->route('student.courses')
                 ->with('error', 'Payment record not found.');
         }
@@ -39,17 +41,29 @@ class PaymentCallbackController extends Controller
             ]);
 
             // Create enrollment
-            Enrollment::firstOrCreate(
+            $enrollment = Enrollment::firstOrCreate(
                 [
-                    'user_id'       => $payment->user_id,
-                    'course_id'     => $payment->course_id,
+                    'user_id' => $payment->user_id,
+                    'course_id' => $payment->course_id,
                     'learning_type' => $payment->learning_type,
                 ],
                 [
-                    'status'      => 'active',
+                    'status' => 'active',
                     'enrolled_at' => now(),
                 ]
             );
+
+            // Link the payment to its enrollment.
+            $payment->update(['enrollment_id' => $enrollment->id]);
+
+            // Best-effort confirmation email on a brand-new enrollment.
+            if ($enrollment->wasRecentlyCreated) {
+                try {
+                    Mail::to($payment->user)->send(new EnrollmentConfirmation($enrollment));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
 
             // Clear checkout session
             session()->forget(['checkout_course_id', 'checkout_learning_type', 'checkout_price', 'current_payment_id']);
@@ -74,11 +88,11 @@ class PaymentCallbackController extends Controller
 
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_URL            => "https://api.paystack.co/transaction/verify/" . $reference,
+            CURLOPT_URL => 'https://api.paystack.co/transaction/verify/'.$reference,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => [
-                "Authorization: Bearer " . $secretKey,
-                "Cache-Control: no-cache",
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer '.$secretKey,
+                'Cache-Control: no-cache',
             ],
         ]);
 
@@ -88,7 +102,8 @@ class PaymentCallbackController extends Controller
 
         if ($httpCode === 200) {
             $data = json_decode($response, true);
-            return isset($data['status']) && $data['status'] === true 
+
+            return isset($data['status']) && $data['status'] === true
                 && $data['data']['status'] === 'success';
         }
 

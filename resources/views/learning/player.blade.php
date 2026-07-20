@@ -28,6 +28,17 @@
                 <p class="text-xs text-gray-500 mt-1">
                     <span id="completed-count">{{ $completedCount }}</span>/<span id="total-count">{{ $course->lessons()->count() }}</span> lessons
                 </p>
+                <a href="{{ route('certificate.show', $course->slug) }}"
+                    id="certificate-link"
+                    class="mt-3 inline-flex items-center justify-center w-full bg-accent text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition {{ $progressPercent >= 100 ? '' : 'hidden' }}">
+                    🎓 Get your certificate
+                </a>
+                @if($enrollment->learning_type === 'sync')
+                    <a href="{{ route('learning.sessions', $course->slug) }}"
+                        class="mt-2 inline-flex items-center justify-center w-full border border-accent text-accent text-sm font-semibold px-4 py-2 rounded-lg hover:bg-accent hover:text-white transition">
+                        📅 Live sessions
+                    </a>
+                @endif
             </div>
 
             {{-- Sections & Lessons --}}
@@ -135,7 +146,7 @@
                     @if($currentLesson->content_type === 'video')
                     <div class="bg-black rounded-lg overflow-hidden mb-6">
                         <video controls class="w-full" style="max-height: 500px;">
-                            <source src="{{ Str::startsWith($currentLesson->content_path, 'http') ? $currentLesson->content_path : asset('storage/' . $currentLesson->content_path) }}" type="video/mp4">
+                            <source src="{{ Str::startsWith($currentLesson->content_path, 'http') ? $currentLesson->content_path : route('lesson.content', [$course->slug, $currentLesson->id]) }}" type="video/mp4">
                             Your browser does not support the video tag.
                         </video>
                     </div>
@@ -144,7 +155,7 @@
                     {{-- Image Content --}}
                     @if($currentLesson->content_type === 'image')
                     <div class="bg-white rounded-lg overflow-hidden mb-6 shadow-sm">
-                        <img src="{{ Str::startsWith($currentLesson->content_path, 'http') ? $currentLesson->content_path : asset('storage/' . $currentLesson->content_path) }}"
+                        <img src="{{ Str::startsWith($currentLesson->content_path, 'http') ? $currentLesson->content_path : route('lesson.content', [$course->slug, $currentLesson->id]) }}"
                             alt="{{ $currentLesson->title }}" class="w-full">
                     </div>
                     @endif
@@ -386,6 +397,9 @@
                 if (progressBar) progressBar.style.width = data.progressPercent + '%';
                 if (progressPercent) progressPercent.textContent = data.progressPercent + '%';
                 if (completedCount) completedCount.textContent = data.completedCount;
+
+                const certificateLink = document.getElementById('certificate-link');
+                if (certificateLink) certificateLink.classList.toggle('hidden', data.progressPercent < 100);
 
                 const sidebarLink = document.querySelector(`a[href*="/lesson/${lessonId}"]`);
                 if (sidebarLink) {
