@@ -2,27 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\EnrollmentConfirmation;
-use App\Models\Enrollment;
+use App\Http\Controllers\Concerns\RedirectsAfterEnrollment;
 use App\Models\Payment;
+use App\Services\PaymentFulfillmentService;
+use App\Services\PaystackService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class PaymentCallbackController extends Controller
 {
+    use RedirectsAfterEnrollment;
+
     /**
-     * Handle the return from Paystack after payment attempt.
+     * Handle the browser redirect back from Paystack after a payment attempt.
      */
-    public function handle(Request $request)
+    public function handle(Request $request, PaystackService $paystack, PaymentFulfillmentService $fulfiller)
     {
-        $reference = $request->get('reference');
+        $reference = $request->query('reference') ?? session('current_payment_reference');
 
         if (! $reference) {
             return redirect()->route('student.courses')
                 ->with('error', 'No payment reference found.');
         }
 
-        // Find the payment record
         $payment = Payment::where('transaction_reference', $reference)->first();
 
         if (! $payment) {
@@ -30,83 +31,34 @@ class PaymentCallbackController extends Controller
                 ->with('error', 'Payment record not found.');
         }
 
-        // Verify payment with Paystack
-        $verified = $this->verifyPaystackPayment($reference);
+        // If a webhook already fulfilled this payment, just send the buyer on.
+        if ($payment->status === 'successful') {
+            $this->clearCheckoutSession();
 
-        if ($verified) {
-            // Update payment status
-            $payment->update([
-                'status' => 'successful',
-                'paid_at' => now(),
-            ]);
-
-            // Create enrollment
-            $enrollment = Enrollment::firstOrCreate(
-                [
-                    'user_id' => $payment->user_id,
-                    'course_id' => $payment->course_id,
-                    'learning_type' => $payment->learning_type,
-                ],
-                [
-                    'status' => 'active',
-                    'enrolled_at' => now(),
-                ]
-            );
-
-            // Link the payment to its enrollment.
-            $payment->update(['enrollment_id' => $enrollment->id]);
-
-            // Best-effort confirmation email on a brand-new enrollment.
-            if ($enrollment->wasRecentlyCreated) {
-                try {
-                    Mail::to($payment->user)->send(new EnrollmentConfirmation($enrollment));
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            }
-
-            // Clear checkout session
-            session()->forget(['checkout_course_id', 'checkout_learning_type', 'checkout_price', 'current_payment_id']);
-
-            return redirect()->route('student.courses')
-                ->with('success', 'Payment successful! You are now enrolled in the course.');
+            return $this->redirectAfterEnrollment($payment);
         }
 
-        // Payment failed
+        if ($paystack->verify($reference)) {
+            $fulfiller->fulfill($payment);
+            $this->clearCheckoutSession();
+
+            return $this->redirectAfterEnrollment($payment);
+        }
+
+        // Verification failed.
         $payment->update(['status' => 'failed']);
 
-        return redirect()->route('checkout.show', ['token' => session('last_token')])
+        return redirect()->route('courses.catalog')
             ->with('error', 'Payment was not successful. Please try again.');
     }
 
-    /**
-     * Verify payment with Paystack API.
-     */
-    private function verifyPaystackPayment($reference)
+    private function clearCheckoutSession(): void
     {
-        $secretKey = config('services.paystack.secret_key');
-
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => 'https://api.paystack.co/transaction/verify/'.$reference,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer '.$secretKey,
-                'Cache-Control: no-cache',
-            ],
+        session()->forget([
+            'checkout_course_id',
+            'checkout_learning_type',
+            'checkout_price',
+            'current_payment_reference',
         ]);
-
-        $response = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
-
-        if ($httpCode === 200) {
-            $data = json_decode($response, true);
-
-            return isset($data['status']) && $data['status'] === true
-                && $data['data']['status'] === 'success';
-        }
-
-        return false;
     }
 }

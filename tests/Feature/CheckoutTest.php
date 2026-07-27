@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -25,6 +26,17 @@ class CheckoutTest extends TestCase
         ]);
     }
 
+    private function checkoutSession(Course $course, string $type = 'async', float $price = 79000): array
+    {
+        return [
+            'checkout_course_id' => $course->id,
+            'checkout_learning_type' => $type,
+            'checkout_price' => $price,
+        ];
+    }
+
+    // ---------- Step 1: show() token handling ----------
+
     public function test_checkout_without_token_redirects_to_catalog(): void
     {
         $this->get('/checkout')
@@ -34,7 +46,6 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_with_invalid_token_redirects_to_catalog(): void
     {
-        // Previously this path threw RouteNotFoundException (courses.index did not exist).
         $this->get('/checkout?token=not-a-valid-token')
             ->assertRedirect(route('courses.catalog'))
             ->assertSessionHas('error');
@@ -70,101 +81,63 @@ class CheckoutTest extends TestCase
             ->assertSee($course->title);
     }
 
-    public function test_initiate_payment_enrolls_user_in_test_mode(): void
+    // ---------- Step 2: real Paystack mode ----------
+
+    public function test_initiate_payment_redirects_to_paystack(): void
     {
+        config(['services.paystack.fake' => false]);
+        Http::fake([
+            'api.paystack.co/transaction/initialize' => Http::response([
+                'status' => true,
+                'data' => [
+                    'authorization_url' => 'https://checkout.paystack.com/xyz123',
+                    'access_code' => 'ac_123',
+                    'reference' => 'ref_123',
+                ],
+            ]),
+        ]);
+
         $course = Course::factory()->create(['price' => 100000]);
         $user = User::factory()->create();
 
-        // async price = 100000 - 25000 + 4000 = 79000
         $response = $this->actingAs($user)
-            ->withSession([
-                'checkout_course_id' => $course->id,
-                'checkout_learning_type' => 'async',
-                'checkout_price' => 79000,
-            ])
+            ->withSession($this->checkoutSession($course))
             ->post('/checkout/pay');
 
-        $response->assertRedirect(route('student.courses'));
+        $response->assertRedirect('https://checkout.paystack.com/xyz123');
 
+        // Payment is pending and the buyer is NOT yet enrolled — that happens
+        // only after Paystack confirms the charge.
         $this->assertDatabaseHas('payments', [
             'user_id' => $user->id,
             'course_id' => $course->id,
-            'status' => 'successful',
+            'status' => 'pending',
             'amount' => 79000,
         ]);
+        $this->assertDatabaseCount('enrollments', 0);
+    }
 
-        $this->assertDatabaseHas('enrollments', [
-            'user_id' => $user->id,
-            'course_id' => $course->id,
-            'learning_type' => 'async',
-            'status' => 'active',
+    public function test_paystack_initialization_failure_marks_payment_failed(): void
+    {
+        config(['services.paystack.fake' => false]);
+        Http::fake([
+            'api.paystack.co/transaction/initialize' => Http::response([
+                'status' => false,
+                'message' => 'Invalid key',
+            ], 401),
         ]);
-    }
-
-    public function test_enrollment_sends_confirmation_email(): void
-    {
-        Mail::fake();
 
         $course = Course::factory()->create(['price' => 100000]);
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession([
-                'checkout_course_id' => $course->id,
-                'checkout_learning_type' => 'async',
-                'checkout_price' => 79000,
-            ])
-            ->post('/checkout/pay');
+            ->withSession($this->checkoutSession($course))
+            ->post('/checkout/pay')
+            ->assertRedirect(route('student.courses'))
+            ->assertSessionHas('error');
 
-        Mail::assertSent(EnrollmentConfirmation::class, function ($mail) use ($user) {
-            return $mail->hasTo($user->email);
-        });
-    }
-
-    public function test_enrollment_email_template_renders(): void
-    {
-        $enrollment = Enrollment::factory()->create();
-
-        $html = (new EnrollmentConfirmation($enrollment))->render();
-
-        $this->assertStringContainsString($enrollment->course->title, $html);
-        $this->assertStringContainsString($enrollment->user->name, $html);
-    }
-
-    public function test_payment_is_linked_to_enrollment(): void
-    {
-        $course = Course::factory()->create(['price' => 100000]);
-        $user = User::factory()->create();
-
-        $this->actingAs($user)
-            ->withSession([
-                'checkout_course_id' => $course->id,
-                'checkout_learning_type' => 'async',
-                'checkout_price' => 79000,
-            ])
-            ->post('/checkout/pay');
-
-        $payment = Payment::where('user_id', $user->id)->firstOrFail();
-        $enrollment = Enrollment::where('user_id', $user->id)->firstOrFail();
-
-        $this->assertSame($enrollment->id, $payment->enrollment_id);
-    }
-
-    public function test_inclass_payment_redirects_to_receipt(): void
-    {
-        $course = Course::factory()->create(['price' => 100000]);
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($user)
-            ->withSession([
-                'checkout_course_id' => $course->id,
-                'checkout_learning_type' => 'inclass',
-                'checkout_price' => 104000,
-            ])
-            ->post('/checkout/pay');
-
-        $payment = Payment::where('user_id', $user->id)->firstOrFail();
-        $response->assertRedirect(route('receipt.show', $payment->id));
+        $this->assertDatabaseHas('payments', ['user_id' => $user->id, 'status' => 'failed']);
+        $this->assertDatabaseCount('enrollments', 0);
     }
 
     public function test_already_enrolled_user_is_not_charged_again(): void
@@ -178,11 +151,7 @@ class CheckoutTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->withSession([
-                'checkout_course_id' => $course->id,
-                'checkout_learning_type' => 'async',
-                'checkout_price' => 79000,
-            ])
+            ->withSession($this->checkoutSession($course))
             ->post('/checkout/pay')
             ->assertRedirect(route('student.courses'));
 
@@ -198,5 +167,64 @@ class CheckoutTest extends TestCase
             ->post('/checkout/pay')
             ->assertRedirect(route('courses.catalog'))
             ->assertSessionHas('error');
+    }
+
+    // ---------- Step 2: fake mode (local demo) ----------
+
+    public function test_fake_mode_enrolls_immediately(): void
+    {
+        config(['services.paystack.fake' => true]);
+        Mail::fake();
+
+        $course = Course::factory()->create(['price' => 100000]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withSession($this->checkoutSession($course))
+            ->post('/checkout/pay')
+            ->assertRedirect(route('student.courses'));
+
+        $this->assertDatabaseHas('payments', [
+            'user_id' => $user->id,
+            'status' => 'successful',
+            'amount' => 79000,
+        ]);
+        $this->assertDatabaseHas('enrollments', [
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+            'learning_type' => 'async',
+            'status' => 'active',
+        ]);
+
+        $payment = Payment::where('user_id', $user->id)->firstOrFail();
+        $enrollment = Enrollment::where('user_id', $user->id)->firstOrFail();
+        $this->assertSame($enrollment->id, $payment->enrollment_id);
+
+        Mail::assertSent(EnrollmentConfirmation::class, fn ($mail) => $mail->hasTo($user->email));
+    }
+
+    public function test_fake_mode_inclass_redirects_to_receipt(): void
+    {
+        config(['services.paystack.fake' => true]);
+
+        $course = Course::factory()->create(['price' => 100000]);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withSession($this->checkoutSession($course, 'inclass', 104000))
+            ->post('/checkout/pay');
+
+        $payment = Payment::where('user_id', $user->id)->firstOrFail();
+        $response->assertRedirect(route('receipt.show', $payment->id));
+    }
+
+    public function test_enrollment_email_template_renders(): void
+    {
+        $enrollment = Enrollment::factory()->create();
+
+        $html = (new EnrollmentConfirmation($enrollment))->render();
+
+        $this->assertStringContainsString($enrollment->course->title, $html);
+        $this->assertStringContainsString($enrollment->user->name, $html);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,7 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-        'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'admin' => EnsureUserIsAdmin::class,
+        ]);
+
+        // Paystack signs webhooks with our secret key, not a CSRF token.
+        $middleware->validateCsrfTokens(except: [
+            'payment/webhook',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

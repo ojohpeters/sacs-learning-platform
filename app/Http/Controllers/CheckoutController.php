@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\EnrollmentConfirmation;
+use App\Http\Controllers\Concerns\RedirectsAfterEnrollment;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Payment;
+use App\Services\PaymentFulfillmentService;
+use App\Services\PaystackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
+    use RedirectsAfterEnrollment;
+
     /**
      * Step 1: Receive the encrypted token from the main website.
      * Decrypt it, validate the course exists, and show the checkout page.
@@ -56,18 +59,7 @@ class CheckoutController extends Controller
         }
 
         // 7. Calculate the price based on learning type
-        $registrationFee = 4000; // Fixed registration fee
-        $basePrice = $course->price;
-
-        $price = match ($learningType) {
-            'inclass' => $basePrice + $registrationFee,
-            'sync' => $basePrice - 10000 + $registrationFee,
-            'async' => $basePrice - 25000 + $registrationFee,
-            default => $basePrice,
-        };
-
-        // Ensure price is not negative
-        $price = max($price, 0);
+        $price = $this->priceFor($course, $learningType);
 
         // 8. Store checkout data in session for the next step
         session([
@@ -88,8 +80,12 @@ class CheckoutController extends Controller
 
     /**
      * Step 2: User confirms enrollment and initiates payment.
+     *
+     * Real mode: create a pending payment and hand off to Paystack's hosted
+     * checkout. The callback/webhook verify the charge and enroll the buyer.
+     * Fake mode (PAYSTACK_FAKE=true): bypass Paystack and fulfill immediately.
      */
-    public function initiatePayment(Request $request)
+    public function initiatePayment(Request $request, PaystackService $paystack, PaymentFulfillmentService $fulfiller)
     {
         if (! auth()->check()) {
             return redirect()->route('login');
@@ -107,6 +103,9 @@ class CheckoutController extends Controller
         $course = Course::findOrFail($courseId);
         $user = auth()->user();
 
+        // Recompute the price server-side — never trust the session amount alone.
+        $price = $this->priceFor($course, $learningType);
+
         // Check if already enrolled
         $existingEnrollment = Enrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
@@ -114,7 +113,7 @@ class CheckoutController extends Controller
             ->first();
 
         if ($existingEnrollment) {
-            session()->forget(['checkout_course_id', 'checkout_learning_type', 'checkout_price']);
+            $this->clearCheckoutSession();
 
             return redirect()->route('student.courses')
                 ->with('info', 'You are already enrolled in this course.');
@@ -135,82 +134,67 @@ class CheckoutController extends Controller
             'learning_type' => $learningType,
         ]);
 
-        // ==========================================
-        // TEST MODE: Skip Paystack entirely
-        // ==========================================
-        // Mark payment as successful
-        $payment->update([
-            'status' => 'successful',
-            'paid_at' => now(),
-        ]);
+        // Local demo mode — skip Paystack entirely.
+        if (config('services.paystack.fake')) {
+            $fulfiller->fulfill($payment);
+            $this->clearCheckoutSession();
 
-        // Create enrollment directly
-        $enrollment = Enrollment::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'course_id' => $course->id,
-                'learning_type' => $learningType,
-            ],
-            [
-                'status' => 'active',
-                'enrolled_at' => now(),
-            ]
-        );
-
-        // Link the payment to its enrollment.
-        $payment->update(['enrollment_id' => $enrollment->id]);
-
-        // Send the confirmation email only on a brand-new enrollment. A mail
-        // failure must never break the checkout, so it is best-effort.
-        if ($enrollment->wasRecentlyCreated) {
-            try {
-                Mail::to($user->email)->send(new EnrollmentConfirmation($enrollment));
-            } catch (\Throwable $e) {
-                report($e);
-            }
+            return $this->redirectAfterEnrollment($payment);
         }
 
-        // Clear checkout session
-        session()->forget(['checkout_course_id', 'checkout_learning_type', 'checkout_price']);
+        // Real mode — initialize the Paystack transaction and redirect to checkout.
+        try {
+            $data = $paystack->initialize(
+                email: $user->email,
+                amountKobo: (int) round($price * 100),
+                reference: $reference,
+                callbackUrl: route('payment.callback'),
+                metadata: [
+                    'user_id' => $user->id,
+                    'course_id' => $course->id,
+                    'learning_type' => $learningType,
+                ],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+            $payment->update(['status' => 'failed']);
 
-        // Redirect based on learning type
-        if ($learningType === 'inclass') {
-            // In-Class: Show receipt page with instructions
-            return redirect()->route('receipt.show', ['payment' => $payment->id])
-                ->with('success', 'Payment successful! Here\'s what to do next.');
-        } elseif ($learningType === 'sync') {
-            // Synchronous: Go to course player with live sessions
-            return redirect()->route('learning.course', $course->slug)
-                ->with('success', 'Enrollment successful! Join your live sessions below.');
-        } else {
-            // Asynchronous: Go to my courses
             return redirect()->route('student.courses')
-                ->with('success', 'Enrollment successful! Welcome to '.$course->title.'.');
+                ->with('error', 'We could not start your payment. Please try again.');
         }
+
+        // Keep the reference so the callback can recover it if Paystack omits it.
+        session(['current_payment_reference' => $reference]);
+
+        return redirect()->away($data['authorization_url']);
     }
 
     /**
-     * Build the Paystack payment URL.
+     * Server-side price for a course + learning type (base + ₦4,000 registration,
+     * with sync/async discounts). Never falls below zero.
      */
-    private function buildPaystackUrl($user, $course, $price, $reference)
+    private function priceFor(Course $course, string $learningType): float
     {
-        $paystackPublicKey = config('services.paystack.public_key');
-        $callbackUrl = route('payment.callback');
+        $registrationFee = 4000;
+        $basePrice = $course->price;
 
-        $params = http_build_query([
-            'public_key' => $paystackPublicKey,
-            'email' => $user->email,
-            'amount' => $price * 100,
-            'currency' => 'NGN',
-            'reference' => $reference,
-            'callback_url' => $callbackUrl,
-            'metadata' => json_encode([
-                'user_id' => $user->id,
-                'course_id' => $course->id,
-                'learning_type' => session('checkout_learning_type'),
-            ]),
+        $price = match ($learningType) {
+            'inclass' => $basePrice + $registrationFee,
+            'sync' => $basePrice - 10000 + $registrationFee,
+            'async' => $basePrice - 25000 + $registrationFee,
+            default => $basePrice,
+        };
+
+        return max($price, 0);
+    }
+
+    private function clearCheckoutSession(): void
+    {
+        session()->forget([
+            'checkout_course_id',
+            'checkout_learning_type',
+            'checkout_price',
+            'current_payment_reference',
         ]);
-
-        return 'https://checkout.paystack.com/?'.$params;
     }
 }

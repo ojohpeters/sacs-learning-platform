@@ -12,6 +12,7 @@ use App\Http\Controllers\CourseCatalogController;
 use App\Http\Controllers\LearningController;
 use App\Http\Controllers\LessonContentController;
 use App\Http\Controllers\PaymentCallbackController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\StudentController;
@@ -49,8 +50,11 @@ Route::get('/learn/{course:slug}/lesson/{lesson}/content', [LessonContentControl
 Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
 Route::post('/checkout/pay', [CheckoutController::class, 'initiatePayment'])->name('checkout.pay')->middleware('auth');
 
-// Payment callback (no auth — Paystack redirects here)
+// Payment callback (no auth — Paystack redirects the browser here)
 Route::get('/payment/callback', [PaymentCallbackController::class, 'handle'])->name('payment.callback');
+
+// Paystack webhook (no auth/CSRF — verified via signature; see bootstrap/app.php)
+Route::post('/payment/webhook', [PaymentWebhookController::class, 'handle'])->name('payment.webhook');
 
 // Student dashboard & learning (protected)
 Route::middleware(['auth'])->group(function () {

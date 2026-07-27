@@ -36,8 +36,11 @@ return [
     ],
 
     'paystack' => [
-    'public_key' => env('PAYSTACK_PUBLIC_KEY', 'pk_test_placeholder'),
-    'secret_key' => env('PAYSTACK_SECRET_KEY', 'sk_test_placeholder'),
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'payment_url' => env('PAYSTACK_PAYMENT_URL', 'https://api.paystack.co'),
+        // When true, checkout bypasses Paystack and auto-completes (local demo only).
+        'fake' => env('PAYSTACK_FAKE', false),
     ],
 
 ];
