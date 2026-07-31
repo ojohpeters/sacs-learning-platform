@@ -4,23 +4,30 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CourseCatalogController;
 use App\Http\Controllers\LearningController;
+use App\Http\Controllers\LessonContentController;
 use App\Http\Controllers\PaymentCallbackController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\StudentController;
+use App\Models\Course;
 use Illuminate\Support\Facades\Route;
 
 // Welcome page
 Route::get('/', function () {
-    $featuredCourses = App\Models\Course::where('is_published', true)
+    $featuredCourses = Course::where('is_published', true)
         ->withCount('enrollments')
         ->latest()
         ->take(6)
         ->get();
 
-    $allCourses = App\Models\Course::where('is_published', true)
+    $allCourses = Course::where('is_published', true)
         ->withCount('enrollments')
         ->latest()
         ->get();
@@ -29,18 +36,25 @@ Route::get('/', function () {
 });
 
 // Public course catalog
-Route::get('/courses', [App\Http\Controllers\CourseCatalogController::class, 'index'])->name('courses.catalog');
-Route::get('/courses/{course:slug}', [App\Http\Controllers\CourseCatalogController::class, 'show'])->name('courses.show');
+Route::get('/courses', [CourseCatalogController::class, 'index'])->name('courses.catalog');
+Route::get('/courses/{course:slug}', [CourseCatalogController::class, 'show'])->name('courses.show');
 
 // Free preview lesson (no enrollment required)
-Route::get('/courses/{course:slug}/preview/{lesson}', [App\Http\Controllers\CourseCatalogController::class, 'preview'])->name('courses.preview');
+Route::get('/courses/{course:slug}/preview/{lesson}', [CourseCatalogController::class, 'preview'])->name('courses.preview');
+
+// Access-controlled streaming of uploaded lesson files (free previews are public;
+// everything else requires an active enrollment — enforced inside the controller).
+Route::get('/learn/{course:slug}/lesson/{lesson}/content', [LessonContentController::class, 'stream'])->name('lesson.content');
 
 // Checkout routes
 Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
 Route::post('/checkout/pay', [CheckoutController::class, 'initiatePayment'])->name('checkout.pay')->middleware('auth');
 
-// Payment callback (no auth — Paystack redirects here)
+// Payment callback (no auth — Paystack redirects the browser here)
 Route::get('/payment/callback', [PaymentCallbackController::class, 'handle'])->name('payment.callback');
+
+// Paystack webhook (no auth/CSRF — verified via signature; see bootstrap/app.php)
+Route::post('/payment/webhook', [PaymentWebhookController::class, 'handle'])->name('payment.webhook');
 
 // Student dashboard & learning (protected)
 Route::middleware(['auth'])->group(function () {
@@ -51,21 +65,25 @@ Route::middleware(['auth'])->group(function () {
 
     // Course learning
     Route::get('/learn/{course:slug}', [LearningController::class, 'show'])->name('learning.course');
+    Route::get('/learn/{course:slug}/live-sessions', [LearningController::class, 'sessions'])->name('learning.sessions');
     Route::get('/learn/{course:slug}/lesson/{lesson}', [LearningController::class, 'showLesson'])->name('learning.lesson');
 
     Route::post('/learn/{course:slug}/lesson/{lesson}/complete', [LearningController::class, 'toggleComplete'])->name('learning.toggle-complete');
 
     // Receipt routes
-    Route::get('/receipt/{payment}', [App\Http\Controllers\ReceiptController::class, 'show'])->name('receipt.show');
-    Route::get('/receipt/{payment}/download', [App\Http\Controllers\ReceiptController::class, 'download'])->name('receipt.download');
+    Route::get('/receipt/{payment}', [ReceiptController::class, 'show'])->name('receipt.show');
+    Route::get('/receipt/{payment}/download', [ReceiptController::class, 'download'])->name('receipt.download');
+
+    // Course completion certificate (only unlocks when all lessons are complete)
+    Route::get('/certificate/{course:slug}', [CertificateController::class, 'show'])->name('certificate.show');
 });
 
 // Admin routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Courses CRUD
-    Route::resource('courses', AdminCourseController::class);
+    // Courses CRUD (no show — the admin edits/manages courses, never a public detail view)
+    Route::resource('courses', AdminCourseController::class)->except('show');
     Route::get('/courses/{course}/curriculum', [AdminCourseController::class, 'curriculum'])->name('courses.curriculum');
 
     // Sections
@@ -79,10 +97,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/lessons/{lesson}', [AdminLessonController::class, 'destroy'])->name('lessons.destroy');
 
     // Sessions
-    Route::get('/courses/{course}/sessions', [App\Http\Controllers\Admin\SessionController::class, 'index'])->name('sessions.index');
-    Route::post('/courses/{course}/sessions', [App\Http\Controllers\Admin\SessionController::class, 'store'])->name('sessions.store');
-    Route::put('/sessions/{session}', [App\Http\Controllers\Admin\SessionController::class, 'update'])->name('sessions.update');
-    Route::delete('/sessions/{session}', [App\Http\Controllers\Admin\SessionController::class, 'destroy'])->name('sessions.destroy');
+    Route::get('/courses/{course}/sessions', [SessionController::class, 'index'])->name('sessions.index');
+    Route::post('/courses/{course}/sessions', [SessionController::class, 'store'])->name('sessions.store');
+    Route::put('/sessions/{session}', [SessionController::class, 'update'])->name('sessions.update');
+    Route::delete('/sessions/{session}', [SessionController::class, 'destroy'])->name('sessions.destroy');
 
     // Users
     Route::resource('users', UserController::class)->only(['index', 'destroy']);
@@ -98,4 +116,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

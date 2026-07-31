@@ -7,7 +7,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Section;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class LessonController extends Controller
 {
@@ -24,8 +24,8 @@ class LessonController extends Controller
 
         Section::create([
             'course_id' => $course->id,
-            'title'     => $validated['title'],
-            'order'     => $order,
+            'title' => $validated['title'],
+            'order' => $order,
         ]);
 
         return back()->with('success', 'Section added.');
@@ -61,56 +61,60 @@ class LessonController extends Controller
     public function store(Request $request, Section $section)
     {
         $validated = $request->validate([
-            'title'        => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'content_type' => 'required|in:video,text,image,pdf',
             'content_file' => 'nullable|file|max:50000|mimes:mp4,mov,avi,jpg,jpeg,png,gif,webp,pdf',
             'content_body' => 'nullable|string',
-            'duration'     => 'nullable|integer|min:0',
+            'duration' => 'nullable|integer|min:0',
             'is_free_preview' => 'boolean',
         ]);
 
         $order = $section->lessons()->max('order') + 1;
 
-        // Handle file upload
+        // Handle file upload — stored on the private disk, served via an
+        // access-controlled route (see LessonContentController).
         $contentPath = null;
         if ($request->hasFile('content_file')) {
-            $contentPath = $request->file('content_file')->store('course-content', 'public');
+            $contentPath = $request->file('content_file')->store('course-content', 'local');
         }
 
         Lesson::create([
-            'section_id'      => $section->id,
-            'title'           => $validated['title'],
-            'content_type'    => $validated['content_type'],
-            'content_path'    => $contentPath,
-            'content_body'    => $validated['content_body'] ?? null,
-            'duration'        => $validated['duration'] ?? 0,
-            'order'           => $order,
+            'section_id' => $section->id,
+            'title' => $validated['title'],
+            'content_type' => $validated['content_type'],
+            'content_path' => $contentPath,
+            'content_body' => $validated['content_body'] ?? null,
+            'duration' => $validated['duration'] ?? 0,
+            'order' => $order,
             'is_free_preview' => $request->has('is_free_preview'),
         ]);
 
         return back()->with('success', 'Lesson added successfully.');
     }
+
     /**
      * Update a lesson.
      */
     public function update(Request $request, Lesson $lesson)
     {
         $validated = $request->validate([
-            'title'        => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'content_type' => 'required|in:video,text,image,pdf',
             'content_file' => 'nullable|file|max:50000|mimes:mp4,mov,avi,jpg,jpeg,png,gif,webp,pdf',
             'content_body' => 'nullable|string',
-            'duration'     => 'nullable|integer|min:0',
+            'duration' => 'nullable|integer|min:0',
             'is_free_preview' => 'boolean',
         ]);
 
-        // Handle file upload
+        // Handle file upload — stored on the private disk (access-controlled).
         if ($request->hasFile('content_file')) {
-            // Delete old file if exists
-            if ($lesson->content_path && \Storage::disk('public')->exists($lesson->content_path)) {
-                \Storage::disk('public')->delete($lesson->content_path);
+            // Delete old file if it exists (only local uploads, not external URLs).
+            if ($lesson->content_path
+                && ! Str::startsWith($lesson->content_path, 'http')
+                && \Storage::disk('local')->exists($lesson->content_path)) {
+                \Storage::disk('local')->delete($lesson->content_path);
             }
-            $validated['content_path'] = $request->file('content_file')->store('course-content', 'public');
+            $validated['content_path'] = $request->file('content_file')->store('course-content', 'local');
         } else {
             // Keep existing path
             $validated['content_path'] = $lesson->content_path;

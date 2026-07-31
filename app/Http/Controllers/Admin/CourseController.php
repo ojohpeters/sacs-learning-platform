@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
-use App\Models\Section;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CourseController extends Controller
 {
     public function index()
     {
         $courses = Course::withCount(['sections', 'enrollments'])->latest()->paginate(10);
+
         return view('admin.courses.index', compact('courses'));
     }
 
@@ -25,12 +25,12 @@ class CourseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title'             => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'short_description' => 'required|string|max:500',
-            'full_description'  => 'required|string',
-            'price'             => 'required|numeric|min:0',
-            'thumbnail'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'is_published'      => 'boolean',
+            'full_description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_published' => 'boolean',
         ]);
 
         // Handle thumbnail upload
@@ -40,13 +40,13 @@ class CourseController extends Controller
         }
 
         Course::create([
-            'title'             => $validated['title'],
-            'slug'              => Str::slug($validated['title']),
+            'title' => $validated['title'],
+            'slug' => $this->uniqueSlug($validated['title']),
             'short_description' => $validated['short_description'],
-            'full_description'  => $validated['full_description'],
-            'price'             => $validated['price'],
-            'thumbnail_path'    => $thumbnailPath,
-            'is_published'      => $request->has('is_published'),
+            'full_description' => $validated['full_description'],
+            'price' => $validated['price'],
+            'thumbnail_path' => $thumbnailPath,
+            'is_published' => $request->has('is_published'),
         ]);
 
         return redirect()->route('admin.courses.index')
@@ -61,12 +61,12 @@ class CourseController extends Controller
     public function update(Request $request, Course $course)
     {
         $validated = $request->validate([
-            'title'             => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'short_description' => 'required|string|max:500',
-            'full_description'  => 'required|string',
-            'price'             => 'required|numeric|min:0',
-            'thumbnail'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'is_published'      => 'boolean',
+            'full_description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'is_published' => 'boolean',
         ]);
 
         // Handle thumbnail upload
@@ -78,7 +78,7 @@ class CourseController extends Controller
             $validated['thumbnail_path'] = $request->file('thumbnail')->store('course-thumbnails', 'public');
         }
 
-        $validated['slug'] = Str::slug($validated['title']);
+        $validated['slug'] = $this->uniqueSlug($validated['title'], $course->id);
         $validated['is_published'] = $request->has('is_published');
 
         $course->update($validated);
@@ -93,6 +93,30 @@ class CourseController extends Controller
 
         return redirect()->route('admin.courses.index')
             ->with('success', 'Course deleted successfully.');
+    }
+
+    /**
+     * Generate a URL slug from a title that is unique across courses.
+     * Appends -2, -3, … on collision. Ignores the course being updated.
+     */
+    private function uniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title);
+        $slug = $base;
+        $suffix = 2;
+
+        // Include trashed courses — a soft-deleted row still occupies the slug
+        // and would trigger the unique constraint on insert.
+        while (Course::withTrashed()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists()
+        ) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     /**

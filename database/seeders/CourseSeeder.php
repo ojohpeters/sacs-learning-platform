@@ -7,17 +7,17 @@ use App\Models\Section;
 use App\Models\Lesson;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CourseSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
         Course::truncate();
         Section::truncate();
         Lesson::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        Schema::enableForeignKeyConstraints();
 
         $previewVideoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
 

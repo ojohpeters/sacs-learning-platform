@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\Lesson;
 use App\Models\Enrollment;
+use App\Models\Lesson;
 use App\Models\LessonCompletion;
-use Illuminate\Http\Request;
 
 class LearningController extends Controller
 {
@@ -18,7 +17,7 @@ class LearningController extends Controller
         $user = auth()->user();
 
         $enrollment = $this->verifyEnrollment($user, $course);
-        if (!$enrollment) {
+        if (! $enrollment) {
             return redirect()->route('student.courses')
                 ->with('error', 'You are not enrolled in this course.');
         }
@@ -47,7 +46,7 @@ class LearningController extends Controller
 
         if ($currentLesson) {
             $allLessons = $this->getOrderedLessons($course);
-            $currentIndex = $allLessons->search(fn($l) => $l->id === $currentLesson->id);
+            $currentIndex = $allLessons->search(fn ($l) => $l->id === $currentLesson->id);
             $prevLesson = $allLessons[$currentIndex - 1] ?? null;
             $nextLesson = $allLessons[$currentIndex + 1] ?? null;
         }
@@ -73,7 +72,7 @@ class LearningController extends Controller
         $user = auth()->user();
 
         $enrollment = $this->verifyEnrollment($user, $course);
-        if (!$enrollment) {
+        if (! $enrollment) {
             return redirect()->route('student.courses')
                 ->with('error', 'You are not enrolled in this course.');
         }
@@ -100,7 +99,7 @@ class LearningController extends Controller
 
         // Get previous and next lessons
         $allLessons = $this->getOrderedLessons($course);
-        $currentIndex = $allLessons->search(fn($l) => $l->id === $lesson->id);
+        $currentIndex = $allLessons->search(fn ($l) => $l->id === $lesson->id);
         $prevLesson = $allLessons[$currentIndex - 1] ?? null;
         $nextLesson = $allLessons[$currentIndex + 1] ?? null;
 
@@ -129,7 +128,7 @@ class LearningController extends Controller
         $user = auth()->user();
 
         $enrollment = $this->verifyEnrollment($user, $course);
-        if (!$enrollment) {
+        if (! $enrollment) {
             return response()->json(['error' => 'Not enrolled'], 403);
         }
 
@@ -149,10 +148,10 @@ class LearningController extends Controller
         } else {
             // Mark complete
             LessonCompletion::create([
-                'user_id'       => $user->id,
-                'lesson_id'     => $lesson->id,
+                'user_id' => $user->id,
+                'lesson_id' => $lesson->id,
                 'enrollment_id' => $enrollment->id,
-                'completed_at'  => now(),
+                'completed_at' => now(),
             ]);
             $completed = true;
         }
@@ -165,11 +164,39 @@ class LearningController extends Controller
         $progressPercent = $totalLessons > 0 ? round(($completedCount / $totalLessons) * 100) : 0;
 
         return response()->json([
-            'completed'       => $completed,
+            'completed' => $completed,
             'progressPercent' => $progressPercent,
-            'completedCount'  => $completedCount,
-            'totalLessons'    => $totalLessons,
+            'completedCount' => $completedCount,
+            'totalLessons' => $totalLessons,
         ]);
+    }
+
+    /**
+     * Show the live (synchronous) sessions schedule for an enrolled student.
+     */
+    public function sessions(Course $course)
+    {
+        $user = auth()->user();
+
+        $enrollment = $this->verifyEnrollment($user, $course);
+        if (! $enrollment) {
+            return redirect()->route('student.courses')
+                ->with('error', 'You are not enrolled in this course.');
+        }
+
+        $upcoming = $course->sessions()
+            ->whereDate('session_date', '>=', now()->toDateString())
+            ->orderBy('session_date')
+            ->orderBy('start_time')
+            ->get();
+
+        $past = $course->sessions()
+            ->whereDate('session_date', '<', now()->toDateString())
+            ->orderByDesc('session_date')
+            ->orderByDesc('start_time')
+            ->get();
+
+        return view('learning.sessions', compact('course', 'enrollment', 'upcoming', 'past'));
     }
 
     /**
