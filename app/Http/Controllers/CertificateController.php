@@ -37,8 +37,12 @@ class CertificateController extends Controller
                 ->with('error', 'Complete all lessons to unlock your certificate.');
         }
 
-        $completedAt = $enrollment->completed_at ?? now();
+        // Issue (or reuse) the certificate's public verification code.
+        $enrollment->issueCertificate();
 
-        return view('certificate.show', compact('course', 'user', 'enrollment', 'completedAt'));
+        $completedAt = $enrollment->certificate_issued_at ?? $enrollment->completed_at ?? now();
+        $verifyUrl = route('certificate.verify', $enrollment->certificate_code);
+
+        return view('certificate.show', compact('course', 'user', 'enrollment', 'completedAt', 'verifyUrl'));
     }
 }

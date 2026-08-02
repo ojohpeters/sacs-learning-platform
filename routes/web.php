@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CourseCatalogController;
 use App\Http\Controllers\LearningController;
@@ -55,6 +56,9 @@ Route::get('/payment/callback', [PaymentCallbackController::class, 'handle'])->n
 
 // Paystack webhook (no auth/CSRF — verified via signature; see bootstrap/app.php)
 Route::post('/payment/webhook', [PaymentWebhookController::class, 'handle'])->name('payment.webhook');
+
+// Public certificate verification (the "Verify at" link printed on certificates)
+Route::get('/verify/{code}', [CertificateVerificationController::class, 'show'])->name('certificate.verify');
 
 // Student dashboard & learning (protected)
 Route::middleware(['auth'])->group(function () {
