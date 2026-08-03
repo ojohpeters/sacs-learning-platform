@@ -7,94 +7,116 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Georgia, 'Times New Roman', serif;
-            background: #eef2f7;
-            color: #1f2937;
-            padding: 32px 16px;
+            background: #e9edf2;
+            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+            padding: 24px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+
+        /* The stage matches the template's 1131x1600 aspect ratio. Text is
+           positioned as a percentage and sized in cqw so it scales with the
+           certificate on any screen and when printed. */
         .certificate {
-            max-width: 900px;
-            margin: 0 auto;
-            background: #ffffff;
-            border: 2px solid #d4af37;
-            border-radius: 12px;
-            padding: 56px 64px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
             position: relative;
+            width: min(820px, 96vw);
+            aspect-ratio: 1131 / 1600;
+            background: #fbf9ec;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+            container-type: inline-size;
         }
-        .certificate::before {
-            content: "";
+        .certificate img.template {
             position: absolute;
-            inset: 12px;
-            border: 1px solid #e5c76b;
-            border-radius: 8px;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            user-select: none;
             pointer-events: none;
         }
-        .eyebrow {
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            font-size: 13px;
-            color: #b8892b;
-            margin-bottom: 24px;
+
+        .field {
+            position: absolute;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #1f2933;
         }
-        h1 { font-size: 34px; margin-bottom: 8px; color: #111827; }
-        .subtitle { font-size: 15px; color: #6b7280; margin-bottom: 32px; }
-        .recipient {
-            font-size: 30px;
-            color: #1d4ed8;
-            border-bottom: 2px solid #e5e7eb;
-            display: inline-block;
-            padding: 0 24px 8px;
-            margin-bottom: 24px;
+        .field-name {
+            top: 56.2%;
+            font-size: 3.4cqw;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: #2b2b2b;
         }
-        .course { font-size: 22px; font-weight: bold; margin: 8px 0 32px; }
-        .meta {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 48px;
-            font-size: 13px;
-            color: #6b7280;
+        .field-course {
+            top: 70.3%;
+            font-size: 3.6cqw;
+            font-weight: 700;
+            color: #141414;
         }
-        .meta .value { font-size: 15px; color: #111827; }
-        .actions { text-align: center; margin: 24px auto 0; max-width: 900px; }
+        .field-date {
+            top: 82.4%;
+            left: 9.5%;
+            right: auto;
+            width: 34%;
+            text-align: center;
+            font-size: 1.5cqw;
+            color: #333;
+        }
+        .field-verify {
+            top: 89.4%;
+            left: 30.8%;
+            right: auto;
+            width: 47%;
+            text-align: left;
+            font-size: 1.18cqw;
+            line-height: 1.45;
+            color: #333;
+        }
+        .field-verify a { color: #1d4ed8; text-decoration: none; word-break: break-all; }
+        .field-verify a:hover { text-decoration: underline; }
+
+        .actions { margin-top: 20px; }
         .btn {
             display: inline-block;
             background: #1d4ed8;
             color: #fff;
             text-decoration: none;
-            padding: 10px 20px;
+            padding: 10px 22px;
             border-radius: 8px;
-            font-family: Arial, sans-serif;
             font-size: 14px;
+            border: none;
+            cursor: pointer;
         }
+
         @media print {
             body { background: #fff; padding: 0; }
             .actions { display: none; }
-            .certificate { box-shadow: none; border-color: #d4af37; }
+            .certificate { box-shadow: none; width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="certificate">
-        <div class="eyebrow">Certificate of Completion</div>
-        <h1>SACS Learning Platform</h1>
-        <p class="subtitle">This is proudly presented to</p>
+        <img class="template" src="{{ asset('images/certificate-template.jpeg') }}" alt="SACS Computers Certificate of Training">
 
-        <div class="recipient">{{ $user->name }}</div>
+        {{-- Recipient --}}
+        <div class="field field-name">{{ $user->name }}</div>
 
-        <p class="subtitle">for successfully completing the course</p>
-        <div class="course">{{ $course->title }}</div>
+        {{-- Course --}}
+        <div class="field field-course">{{ $course->title }}</div>
 
-        <div class="meta">
-            <div>
-                <div>Date</div>
-                <div class="value">{{ $completedAt->format('F j, Y') }}</div>
-            </div>
-            <div>
-                <div>Certificate ID</div>
-                <div class="value">SACS-{{ str_pad($enrollment->id, 6, '0', STR_PAD_LEFT) }}</div>
-            </div>
+        {{-- Date (sits on the line above the "Date" label) --}}
+        <div class="field field-date">{{ $completedAt->format('F j, Y') }}</div>
+
+        {{-- Verification (clickable) --}}
+        <div class="field field-verify">
+            Verify at:<br>
+            <a href="{{ $verifyUrl }}">{{ $verifyUrl }}</a><br>
+            SACS Computers has confirmed the identity of the individual
+            and their participation in the course.
         </div>
     </div>
 
