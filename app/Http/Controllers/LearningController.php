@@ -172,8 +172,10 @@ class LearningController extends Controller
             // Credit only the real time elapsed since the last ping, capped at
             // one interval (+ a little slack for jitter). Idle/backgrounded
             // gaps and rapid-fire pings therefore can't over-credit.
+            // Note: on Carbon 3, $last->diffInSeconds($now) is the positive
+            // elapsed time ($now - $last); the reverse order would be negative.
             $elapsed = $progress->last_heartbeat_at
-                ? $now->diffInSeconds($progress->last_heartbeat_at)
+                ? (int) $progress->last_heartbeat_at->diffInSeconds($now)
                 : $interval;
             $credit = max(0, min($elapsed, $interval + 5));
         }

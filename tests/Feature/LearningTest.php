@@ -162,6 +162,35 @@ class LearningTest extends TestCase
         $this->assertGreaterThan(0, $spent);
     }
 
+    public function test_repeated_heartbeats_accrue_over_time_until_completable(): void
+    {
+        [$course, $lesson] = $this->courseWithLesson(60); // video → requires 30s
+        $user = User::factory()->create();
+        Enrollment::factory()->create([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+        ]);
+
+        $this->freezeTime();
+
+        // First ping credits one interval (15s).
+        $this->actingAs($user)
+            ->postJson(route('learning.heartbeat', [$course->slug, $lesson->id]))
+            ->assertJson(['secondsSpent' => 15, 'canComplete' => false]);
+
+        // 20 real seconds pass, then another ping — must accrue, not stall at 15.
+        $this->travel(20)->seconds();
+        $this->actingAs($user)
+            ->postJson(route('learning.heartbeat', [$course->slug, $lesson->id]))
+            ->assertJson(['canComplete' => true]);
+
+        // Completion is now allowed.
+        $this->actingAs($user)
+            ->postJson(route('learning.toggle-complete', [$course->slug, $lesson->id]))
+            ->assertOk()
+            ->assertJson(['completed' => true]);
+    }
+
     public function test_opening_a_lesson_starts_its_clock(): void
     {
         [$course, $lesson] = $this->courseWithLesson();
