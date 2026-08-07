@@ -107,10 +107,16 @@
                                                     <p class="text-xs text-gray-400 mt-0.5">Upload new to replace. Leave empty to keep current file.</p>
                                                 </div>
                                                 <div>
-                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Duration (seconds)</label>
                                                     <input type="number" name="duration" value="{{ $lesson->duration }}" min="0"
                                                            class="w-full border border-gray-300 rounded px-3 py-1 text-sm">
-                                                    <p class="text-xs text-gray-400 mt-0.5">Only needed for videos</p>
+                                                    <p class="text-xs text-gray-400 mt-0.5">Mainly for videos</p>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-700 mb-1">Min. time (seconds)</label>
+                                                    <input type="number" name="min_seconds" value="{{ $lesson->min_seconds }}" min="0"
+                                                           class="w-full border border-gray-300 rounded px-3 py-1 text-sm">
+                                                    <p class="text-xs text-gray-400 mt-0.5">Before it can be completed. Blank = auto, 0 = no timer.</p>
                                                 </div>
                                                 <div class="col-span-2">
                                                     <label class="block text-xs font-medium text-gray-700 mb-1">Content Body (HTML)</label>
@@ -160,10 +166,16 @@
                                     <p class="text-xs text-gray-400 mt-0.5" id="new-file-hint">Required for video/image/PDF. Not needed for text.</p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Duration (seconds)</label>
                                     <input type="number" name="duration" value="0" min="0"
                                            class="w-full border border-gray-300 rounded px-3 py-1 text-sm">
-                                    <p class="text-xs text-gray-400 mt-0.5">Only needed for videos</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">Mainly for videos</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Min. time (seconds)</label>
+                                    <input type="number" name="min_seconds" value="" min="0"
+                                           class="w-full border border-gray-300 rounded px-3 py-1 text-sm">
+                                    <p class="text-xs text-gray-400 mt-0.5">Before it can be completed. Blank = auto, 0 = no timer.</p>
                                 </div>
                                 <div class="col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">Content Body (HTML)</label>

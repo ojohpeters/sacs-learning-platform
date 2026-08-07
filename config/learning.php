@@ -20,6 +20,9 @@ return [
 
     'max_seconds_per_lesson' => (int) env('LEARNING_MAX_SECONDS', 600),
 
+    // Default requirement for non-video "reading" lessons (text/image/pdf).
+    'reading_seconds' => (int) env('LEARNING_READING_SECONDS', 20),
+
     // How often the player reports active time, in seconds.
     'heartbeat_interval' => (int) env('LEARNING_HEARTBEAT_INTERVAL', 15),
 

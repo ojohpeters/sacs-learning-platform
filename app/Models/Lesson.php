@@ -18,6 +18,7 @@ class Lesson extends Model
         'content_path',
         'content_body',
         'duration',
+        'min_seconds',
         'order',
         'is_free_preview',
     ];
@@ -48,17 +49,29 @@ class Lesson extends Model
 
     /**
      * Active seconds a student must accumulate before this lesson can be
-     * marked complete — a fraction of the stated duration, clamped to a
-     * sensible floor and ceiling (see config/learning.php).
+     * marked complete.
+     *
+     * Precedence:
+     *   1. Per-lesson `min_seconds` override (0 disables the gate entirely).
+     *   2. Video lessons: a fraction of the runtime, clamped to a floor/ceiling.
+     *   3. Reading pages (text/image/pdf): a short fixed floor.
      */
     public function requiredSeconds(): int
     {
-        $fraction = (float) config('learning.required_fraction', 0.5);
-        $min = (int) config('learning.min_seconds_per_lesson', 30);
+        if ($this->min_seconds !== null) {
+            return max(0, (int) $this->min_seconds);
+        }
+
         $max = (int) config('learning.max_seconds_per_lesson', 600);
 
+        if ($this->content_type !== 'video') {
+            return min((int) config('learning.reading_seconds', 20), $max);
+        }
+
+        $fraction = (float) config('learning.required_fraction', 0.5);
+        $floor = (int) config('learning.min_seconds_per_lesson', 30);
         $base = (int) round(($this->duration ?? 0) * $fraction);
 
-        return max($min, min($base ?: $min, $max));
+        return max($floor, min($base ?: $floor, $max));
     }
 }

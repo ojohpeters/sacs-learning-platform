@@ -66,6 +66,7 @@ class LessonController extends Controller
             'content_file' => 'nullable|file|max:50000|mimes:mp4,mov,avi,jpg,jpeg,png,gif,webp,pdf',
             'content_body' => 'nullable|string',
             'duration' => 'nullable|integer|min:0',
+            'min_seconds' => 'nullable|integer|min:0',
             'is_free_preview' => 'boolean',
         ]);
 
@@ -85,6 +86,7 @@ class LessonController extends Controller
             'content_path' => $contentPath,
             'content_body' => $validated['content_body'] ?? null,
             'duration' => $validated['duration'] ?? 0,
+            'min_seconds' => $validated['min_seconds'] ?? null,
             'order' => $order,
             'is_free_preview' => $request->has('is_free_preview'),
         ]);
@@ -103,6 +105,7 @@ class LessonController extends Controller
             'content_file' => 'nullable|file|max:50000|mimes:mp4,mov,avi,jpg,jpeg,png,gif,webp,pdf',
             'content_body' => 'nullable|string',
             'duration' => 'nullable|integer|min:0',
+            'min_seconds' => 'nullable|integer|min:0',
             'is_free_preview' => 'boolean',
         ]);
 

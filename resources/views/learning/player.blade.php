@@ -383,12 +383,16 @@
 
         const required = parseInt(markBtn.dataset.requiredSeconds, 10) || 0;
         const interval = (parseInt(markBtn.dataset.heartbeatInterval, 10) || 15) * 1000;
-        let spent = parseInt(markBtn.dataset.spentSeconds, 10) || 0;
+        let spent = parseInt(markBtn.dataset.spentSeconds, 10) || 0; // server-confirmed
+        let display = spent;                                         // on-screen, ticks each second
         let completed = markBtn.dataset.completed === '1';
+        let confirming = false;
 
         const lockedClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-500 cursor-not-allowed';
         const readyClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white';
         const doneClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-success text-white hover:bg-success-dark';
+
+        const ready = () => spent >= required;
 
         function refreshGate() {
             if (completed) {
@@ -399,7 +403,7 @@
                 return;
             }
             if (hint) hint.classList.remove('hidden');
-            if (spent >= required) {
+            if (ready()) {
                 markBtn.disabled = false;
                 markBtn.className = readyClasses;
                 markBtn.textContent = 'Mark as Complete';
@@ -408,28 +412,47 @@
                 markBtn.disabled = true;
                 markBtn.className = lockedClasses;
                 markBtn.textContent = 'Mark as Complete';
-                if (hint) hint.textContent = `Keep going — ${required - spent}s of active time left on this lesson.`;
+                const left = Math.max(required - display, 0);
+                if (hint) hint.textContent = `Keep watching — ${left}s of active time left on this lesson.`;
             }
         }
 
-        // Report active time while the lesson tab is in the foreground.
+        // Report active time to the server; it credits only real elapsed time.
         function heartbeat() {
-            if (completed || spent >= required || document.visibilityState !== 'visible') return;
+            if (completed || ready() || document.visibilityState !== 'visible') { confirming = false; return; }
             fetch(`/learn/${courseSlug}/lesson/${lessonId}/heartbeat`, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
             })
             .then(r => r.ok ? r.json() : null)
             .then(data => {
+                confirming = false;
                 if (!data) return;
                 spent = data.secondsSpent;
+                if (spent > display) display = spent;
                 refreshGate();
             })
-            .catch(() => {});
+            .catch(() => { confirming = false; });
+        }
+
+        // Tick the visible countdown every second so it feels live.
+        function tick() {
+            if (completed || ready() || document.visibilityState !== 'visible') return;
+            if (display < required) {
+                display++;
+                refreshGate();
+            }
+            // When the countdown reaches zero, confirm with the server right
+            // away (don't wait for the next interval) so the button unlocks.
+            if (display >= required && !confirming) {
+                confirming = true;
+                heartbeat();
+            }
         }
 
         refreshGate();
-        const timer = setInterval(heartbeat, interval);
+        setInterval(heartbeat, interval);
+        setInterval(tick, 1000);
 
         markBtn.addEventListener('click', function() {
             if (markBtn.disabled) return;

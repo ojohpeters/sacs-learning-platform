@@ -15,11 +15,15 @@ class LearningTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function courseWithLesson(int $duration = 120): array
+    private function courseWithLesson(int $duration = 120, array $attrs = []): array
     {
         $course = Course::factory()->create();
         $section = Section::factory()->create(['course_id' => $course->id]);
-        $lesson = Lesson::factory()->create(['section_id' => $section->id, 'duration' => $duration]);
+        $lesson = Lesson::factory()->create(array_merge([
+            'section_id' => $section->id,
+            'content_type' => 'video',
+            'duration' => $duration,
+        ], $attrs));
 
         return [$course, $lesson];
     }
@@ -173,5 +177,43 @@ class LearningTest extends TestCase
             'user_id' => $user->id,
             'lesson_id' => $lesson->id,
         ]);
+    }
+
+    public function test_reading_lesson_uses_a_short_default_requirement(): void
+    {
+        // A text page's long "duration" should not gate it — it uses the short read floor.
+        $lesson = Lesson::factory()->make(['content_type' => 'text', 'duration' => 600, 'min_seconds' => null]);
+
+        $this->assertSame((int) config('learning.reading_seconds'), $lesson->requiredSeconds());
+    }
+
+    public function test_video_lesson_uses_duration_fraction(): void
+    {
+        $lesson = Lesson::factory()->make(['content_type' => 'video', 'duration' => 600, 'min_seconds' => null]);
+
+        $this->assertSame(300, $lesson->requiredSeconds()); // 600 * 0.5
+    }
+
+    public function test_min_seconds_override_is_respected(): void
+    {
+        $lesson = Lesson::factory()->make(['content_type' => 'video', 'duration' => 600, 'min_seconds' => 45]);
+
+        $this->assertSame(45, $lesson->requiredSeconds());
+    }
+
+    public function test_lesson_with_zero_min_seconds_can_be_completed_instantly(): void
+    {
+        [$course, $lesson] = $this->courseWithLesson(600, ['min_seconds' => 0]);
+        $user = User::factory()->create();
+        Enrollment::factory()->create([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+        ]);
+
+        // No timer — completes immediately.
+        $this->actingAs($user)
+            ->postJson(route('learning.toggle-complete', [$course->slug, $lesson->id]))
+            ->assertOk()
+            ->assertJson(['completed' => true]);
     }
 }
