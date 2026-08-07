@@ -73,6 +73,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/learn/{course:slug}/lesson/{lesson}', [LearningController::class, 'showLesson'])->name('learning.lesson');
 
     Route::post('/learn/{course:slug}/lesson/{lesson}/complete', [LearningController::class, 'toggleComplete'])->name('learning.toggle-complete');
+    Route::post('/learn/{course:slug}/lesson/{lesson}/heartbeat', [LearningController::class, 'heartbeat'])->name('learning.heartbeat');
 
     // Receipt routes
     Route::get('/receipt/{payment}', [ReceiptController::class, 'show'])->name('receipt.show');

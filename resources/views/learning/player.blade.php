@@ -168,20 +168,32 @@
                     @endif
 
                     {{-- Mark Complete Button --}}
-                    <div class="flex justify-center mb-8">
+                    @php
+                        $isCurrentCompleted = in_array($currentLesson->id, $completedLessonIds);
+                        $currentLocked = ! $isCurrentCompleted && ($secondsSpent < $requiredSeconds);
+                    @endphp
+                    <div class="flex flex-col items-center mb-8">
                         <button id="mark-complete-btn"
                             data-course-slug="{{ $course->slug }}"
                             data-lesson-id="{{ $currentLesson->id }}"
+                            data-required-seconds="{{ $requiredSeconds }}"
+                            data-spent-seconds="{{ $secondsSpent }}"
+                            data-heartbeat-interval="{{ $heartbeatInterval }}"
+                            data-completed="{{ $isCurrentCompleted ? '1' : '0' }}"
+                            @if($currentLocked) disabled @endif
                             class="px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200
-                                           {{ in_array($currentLesson->id, $completedLessonIds) 
-                                              ? 'bg-success text-white hover:bg-success-dark' 
-                                              : 'bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white' }}">
-                            @if(in_array($currentLesson->id, $completedLessonIds))
+                                           {{ $isCurrentCompleted
+                                              ? 'bg-success text-white hover:bg-success-dark'
+                                              : ($currentLocked
+                                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                 : 'bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white') }}">
+                            @if($isCurrentCompleted)
                             ✓ Completed — Click to Undo
                             @else
                             Mark as Complete
                             @endif
                         </button>
+                        <p id="lesson-timer-hint" class="text-sm text-gray-500 mt-3 {{ $isCurrentCompleted ? 'hidden' : '' }}"></p>
                     </div>
 
                     {{-- Previous / Next Navigation --}}
@@ -359,41 +371,103 @@
         }
     }
 
-    // Mark Complete Button
+    // Mark Complete Button + time-on-lesson gating
     document.addEventListener('DOMContentLoaded', function() {
         const markBtn = document.getElementById('mark-complete-btn');
         if (!markBtn) return;
 
+        const hint = document.getElementById('lesson-timer-hint');
+        const courseSlug = markBtn.dataset.courseSlug;
+        const lessonId = markBtn.dataset.lessonId;
+        const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+        const required = parseInt(markBtn.dataset.requiredSeconds, 10) || 0;
+        const interval = (parseInt(markBtn.dataset.heartbeatInterval, 10) || 15) * 1000;
+        let spent = parseInt(markBtn.dataset.spentSeconds, 10) || 0;
+        let completed = markBtn.dataset.completed === '1';
+
+        const lockedClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-500 cursor-not-allowed';
+        const readyClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white';
+        const doneClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-success text-white hover:bg-success-dark';
+
+        function refreshGate() {
+            if (completed) {
+                markBtn.disabled = false;
+                markBtn.className = doneClasses;
+                markBtn.textContent = '✓ Completed — Click to Undo';
+                if (hint) hint.classList.add('hidden');
+                return;
+            }
+            if (hint) hint.classList.remove('hidden');
+            if (spent >= required) {
+                markBtn.disabled = false;
+                markBtn.className = readyClasses;
+                markBtn.textContent = 'Mark as Complete';
+                if (hint) hint.textContent = 'You can now mark this lesson complete.';
+            } else {
+                markBtn.disabled = true;
+                markBtn.className = lockedClasses;
+                markBtn.textContent = 'Mark as Complete';
+                if (hint) hint.textContent = `Keep going — ${required - spent}s of active time left on this lesson.`;
+            }
+        }
+
+        // Report active time while the lesson tab is in the foreground.
+        function heartbeat() {
+            if (completed || spent >= required || document.visibilityState !== 'visible') return;
+            fetch(`/learn/${courseSlug}/lesson/${lessonId}/heartbeat`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                spent = data.secondsSpent;
+                refreshGate();
+            })
+            .catch(() => {});
+        }
+
+        refreshGate();
+        const timer = setInterval(heartbeat, interval);
+
         markBtn.addEventListener('click', function() {
-            const courseSlug = this.dataset.courseSlug;
-            const lessonId = this.dataset.lessonId;
+            if (markBtn.disabled) return;
             const url = `/learn/${courseSlug}/lesson/${lessonId}/complete`;
 
-            this.disabled = true;
-            this.style.opacity = '0.7';
+            markBtn.disabled = true;
+            markBtn.style.opacity = '0.7';
 
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': csrf,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.completed) {
-                    this.textContent = '✓ Completed — Click to Undo';
-                    this.className = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-success text-white hover:bg-success-dark';
-                } else {
-                    this.textContent = 'Mark as Complete';
-                    this.className = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white';
+            .then(async response => {
+                if (response.status === 422) {
+                    const err = await response.json();
+                    spent = err.secondsSpent ?? spent;
+                    markBtn.style.opacity = '1';
+                    refreshGate();
+                    if (hint) hint.textContent = err.error;
+                    return null;
                 }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+
+                completed = !!data.completed;
+                markBtn.style.opacity = '1';
+                refreshGate();
 
                 const progressBar = document.getElementById('progress-bar');
                 const progressPercent = document.getElementById('progress-percent');
                 const completedCount = document.getElementById('completed-count');
-                
+
                 if (progressBar) progressBar.style.width = data.progressPercent + '%';
                 if (progressPercent) progressPercent.textContent = data.progressPercent + '%';
                 if (completedCount) completedCount.textContent = data.completedCount;
@@ -412,14 +486,11 @@
                         }
                     }
                 }
-
-                this.disabled = false;
-                this.style.opacity = '1';
             })
             .catch(error => {
                 console.error('Error:', error);
-                this.disabled = false;
-                this.style.opacity = '1';
+                markBtn.style.opacity = '1';
+                refreshGate();
             });
         });
     });
