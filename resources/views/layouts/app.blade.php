@@ -8,68 +8,74 @@
         <link rel="icon" type="image/png" href="https://placehold.co/32x32/1E3A5F/FFFFFF?text=S">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <style>
-            body {
-                font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            }
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+            [x-cloak] { display: none !important; }
         </style>
     </head>
-    <body class="font-sans antialiased bg-gray-50">
-        <div class="min-h-screen">
+    <body class="font-sans antialiased bg-gray-50 text-gray-900">
+        <div class="min-h-screen flex flex-col">
             {{-- Navigation --}}
-            <nav class="bg-primary border-b border-primary-700">
+            <nav class="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-16">
+                    <div class="flex justify-between h-16 items-center">
                         {{-- Logo & Brand --}}
-                        <div class="flex items-center">
-                            <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-                                    <span class="text-white font-bold text-lg">S</span>
-                                </div>
-                                <div>
-                                    <span class="text-white font-bold text-xl">SACS</span>
-                                    <span class="text-accent-light text-sm block -mt-1">Computers</span>
-                                </div>
-                            </a>
-                        </div>
+                        <a href="{{ url('/') }}" class="flex items-center gap-3 group">
+                            <div class="w-10 h-10 rounded-xl bg-brand-gradient-r flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
+                                <span class="text-white font-black text-lg">S</span>
+                            </div>
+                            <div class="leading-tight">
+                                <span class="text-white font-extrabold text-xl">SACS</span>
+                                <span class="text-secondary-light text-xs block -mt-1 tracking-wide">Computers</span>
+                            </div>
+                        </a>
 
                         {{-- Navigation Links --}}
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center gap-1 sm:gap-2">
                             @auth
                                 @if(auth()->user()->isAdmin())
-                                    <a href="{{ route('admin.dashboard') }}" class="text-accent-light hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                                    <a href="{{ route('admin.dashboard') }}" class="text-secondary-light hover:text-white px-3 py-2 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors">
                                         Admin Panel
                                     </a>
                                 @endif
-                                <a href="{{ route('student.courses') }}" class="text-accent-light hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                                <a href="{{ route('courses.catalog') }}" class="hidden sm:inline-flex text-gray-300 hover:text-white px-3 py-2 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors">
+                                    Browse
+                                </a>
+                                <a href="{{ route('student.courses') }}" class="text-gray-100 hover:text-white px-3 py-2 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors">
                                     My Courses
                                 </a>
-                                
+
                                 {{-- User Dropdown --}}
-                                <div class="relative" x-data="{ open: false }">
-                                    <button @click="open = !open" class="flex items-center text-white hover:text-accent-light transition-colors px-3 py-2">
-                                        <span class="text-sm mr-2">{{ auth()->user()->name }}</span>
+                                <div class="relative ml-1" x-data="{ open: false }">
+                                    <button @click="open = !open" class="flex items-center gap-2 text-white rounded-full pl-1 pr-2 py-1 hover:bg-white/10 transition-colors">
+                                        <span class="w-8 h-8 rounded-full bg-brand-gradient-r flex items-center justify-center text-sm font-bold">
+                                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                                        </span>
+                                        <span class="text-sm hidden sm:block">{{ auth()->user()->name }}</span>
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                         </svg>
                                     </button>
-                                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
-                                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                                    <div x-show="open" x-transition @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-card-hover py-1 z-50 border border-gray-100">
+                                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
                                         <form method="POST" action="{{ route('logout') }}">
                                             @csrf
-                                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-danger hover:bg-danger-light">
                                                 Logout
                                             </button>
                                         </form>
                                     </div>
                                 </div>
                             @else
-                                <a href="{{ route('login') }}" class="text-accent-light hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                                <a href="{{ route('courses.catalog') }}" class="hidden sm:inline-flex text-gray-300 hover:text-white px-3 py-2 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors">
+                                    Courses
+                                </a>
+                                <a href="{{ route('login') }}" class="text-gray-100 hover:text-white px-3 py-2 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors">
                                     Login
                                 </a>
-                                <a href="{{ route('register') }}" class="bg-accent text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent-dark transition-colors">
+                                <a href="{{ route('register') }}" class="bg-brand-gradient-r text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-glow hover:-translate-y-0.5 transition-all">
                                     Get Started
                                 </a>
                             @endauth
@@ -80,7 +86,7 @@
 
             {{-- Page Heading --}}
             @if (isset($header))
-                <header class="bg-white shadow-sm border-b">
+                <header class="bg-white shadow-sm border-b border-gray-100">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
@@ -89,47 +95,72 @@
 
             {{-- Flash Messages --}}
             @if(session('success') || session('error') || session('info'))
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" x-transition
+                     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
                     @if(session('success'))
-                        <div class="bg-success-light border border-success text-success-dark px-4 py-3 rounded-lg mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
+                        <div class="bg-white border-l-4 border-success shadow-card text-gray-700 px-4 py-3 rounded-xl mb-2 flex items-center">
+                            <span class="w-8 h-8 rounded-full bg-success-light text-success-dark flex items-center justify-center mr-3">✓</span>
                             {{ session('success') }}
+                            <button @click="show = false" class="ml-auto text-gray-400 hover:text-gray-600">✕</button>
                         </div>
                     @endif
                     @if(session('error'))
-                        <div class="bg-danger-light border border-danger text-danger-dark px-4 py-3 rounded-lg mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                            </svg>
+                        <div class="bg-white border-l-4 border-danger shadow-card text-gray-700 px-4 py-3 rounded-xl mb-2 flex items-center">
+                            <span class="w-8 h-8 rounded-full bg-danger-light text-danger flex items-center justify-center mr-3">!</span>
                             {{ session('error') }}
+                            <button @click="show = false" class="ml-auto text-gray-400 hover:text-gray-600">✕</button>
                         </div>
                     @endif
                     @if(session('info'))
-                        <div class="bg-accent-light border border-accent text-accent-dark px-4 py-3 rounded-lg mb-4">
+                        <div class="bg-white border-l-4 border-accent shadow-card text-gray-700 px-4 py-3 rounded-xl mb-2 flex items-center">
+                            <span class="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center mr-3">i</span>
                             {{ session('info') }}
+                            <button @click="show = false" class="ml-auto text-gray-400 hover:text-gray-600">✕</button>
                         </div>
                     @endif
                 </div>
             @endif
 
             {{-- Page Content --}}
-            <main>
+            <main class="flex-1">
                 {{ $slot }}
             </main>
 
             {{-- Footer --}}
             <footer class="bg-primary text-white mt-16">
-                <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                    <div class="flex flex-col md:flex-row justify-between items-center">
-                        <div class="flex items-center space-x-2 mb-4 md:mb-0">
-                            <div class="w-8 h-8 bg-accent rounded flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">S</span>
+                <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                    <div class="grid gap-8 md:grid-cols-4">
+                        <div class="md:col-span-2">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-xl bg-brand-gradient-r flex items-center justify-center shadow-glow">
+                                    <span class="text-white font-black">S</span>
+                                </div>
+                                <div class="leading-tight">
+                                    <span class="text-white font-extrabold text-lg">SACS Computers</span>
+                                    <span class="text-secondary-light text-xs block -mt-0.5">Learning Platform</span>
+                                </div>
                             </div>
-                            <span class="text-accent-light">SACS Computers Learning Platform</span>
+                            <p class="text-gray-400 text-sm max-w-sm">Master in-demand tech skills — in-class, live online, or self-paced — and earn a verifiable certificate.</p>
                         </div>
-                        <p class="text-gray-400 text-sm">&copy; {{ date('Y') }} SACS Computers. All rights reserved.</p>
+                        <div>
+                            <h4 class="text-sm font-semibold text-white mb-3">Explore</h4>
+                            <ul class="space-y-2 text-sm text-gray-400">
+                                <li><a href="{{ route('courses.catalog') }}" class="hover:text-secondary-light transition-colors">All Courses</a></li>
+                                <li><a href="{{ url('/') }}" class="hover:text-secondary-light transition-colors">Home</a></li>
+                                @auth<li><a href="{{ route('student.courses') }}" class="hover:text-secondary-light transition-colors">My Courses</a></li>@endauth
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-white mb-3">Learning modes</h4>
+                            <ul class="space-y-2 text-sm text-gray-400">
+                                <li>In-Class</li>
+                                <li>Live Online</li>
+                                <li>Self-Paced</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-10 pt-6 border-t border-white/10 text-center text-gray-500 text-sm">
+                        &copy; {{ date('Y') }} SACS Computers. All rights reserved.
                     </div>
                 </div>
             </footer>
