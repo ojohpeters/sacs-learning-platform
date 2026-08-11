@@ -1,11 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-bold text-lg sm:text-xl text-gray-900 leading-tight truncate">
                 {{ $course->title }}
             </h2>
-            <a href="{{ route('student.courses') }}" class="text-sm text-accent hover:text-accent-dark">
-                ← My Courses
+            <a href="{{ route('student.courses') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-accent-dark flex-shrink-0 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                My Courses
             </a>
         </div>
     </x-slot>
@@ -15,28 +16,30 @@
         {{-- Sidebar: Curriculum --}}
         <div class="w-80 bg-white border-r overflow-y-auto flex-shrink-0">
             {{-- Progress Header --}}
-            <div class="p-4 border-b bg-gray-50">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-700">Your Progress</span>
-                    <span class="text-sm font-bold text-accent" id="progress-percent">{{ $progressPercent }}%</span>
+            <div class="p-5 border-b border-gray-100">
+                <div class="flex items-baseline justify-between mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Your progress</span>
+                    <span class="text-lg font-bold text-primary" id="progress-percent">{{ $progressPercent }}%</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div class="bg-accent h-2.5 rounded-full transition-all duration-300"
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div class="bg-accent h-2 rounded-full transition-all duration-500 ease-out"
                         id="progress-bar"
                         style="width: {{ $progressPercent }}%"></div>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">
-                    <span id="completed-count">{{ $completedCount }}</span>/<span id="total-count">{{ $course->lessons()->count() }}</span> lessons
+                <p class="text-xs text-gray-500 mt-2">
+                    <span id="completed-count">{{ $completedCount }}</span> of <span id="total-count">{{ $course->lessons()->count() }}</span> lessons complete
                 </p>
                 <a href="{{ route('certificate.show', $course->slug) }}"
                     id="certificate-link"
-                    class="mt-3 inline-flex items-center justify-center w-full bg-accent text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition {{ $progressPercent >= 100 ? '' : 'hidden' }}">
-                    🎓 Get your certificate
+                    class="mt-4 inline-flex items-center justify-center gap-2 w-full bg-accent text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-accent-dark transition-colors {{ $progressPercent >= 100 ? '' : 'hidden' }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z"/></svg>
+                    Get your certificate
                 </a>
                 @if($enrollment->learning_type === 'sync')
                     <a href="{{ route('learning.sessions', $course->slug) }}"
-                        class="mt-2 inline-flex items-center justify-center w-full border border-accent text-accent text-sm font-semibold px-4 py-2 rounded-lg hover:bg-accent hover:text-white transition">
-                        📅 Live sessions
+                        class="mt-2 inline-flex items-center justify-center gap-2 w-full border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-lg hover:border-accent hover:text-accent transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Live sessions
                     </a>
                 @endif
             </div>
@@ -53,7 +56,7 @@
                         onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-90')">
                         <span class="text-sm flex items-center">
                             @if($isCurrentSection)
-                                <span class="w-2 h-2 bg-accent rounded-full mr-2 animate-pulse"></span>
+                                <span class="w-1.5 h-1.5 bg-accent rounded-full mr-2"></span>
                             @endif
                             {{ $section->title }}
                         </span>
@@ -109,16 +112,16 @@
             
             {{-- Tabs: Only show for sync students --}}
             @if($enrollment->learning_type === 'sync')
-                <div class="bg-white border-b">
+                <div class="bg-white border-b border-gray-100">
                     <div class="max-w-4xl mx-auto px-6">
-                        <nav class="flex space-x-8">
-                            <button onclick="switchTab('content')" id="tab-content-btn" 
-                                    class="py-3 px-1 border-b-2 border-accent text-accent font-medium text-sm transition-colors">
-                                📖 Course Content
+                        <nav class="flex gap-6">
+                            <button onclick="switchTab('content')" id="tab-content-btn"
+                                    class="py-3.5 px-1 border-b-2 border-accent text-accent font-semibold text-sm transition-colors">
+                                Course content
                             </button>
                             <button onclick="switchTab('sessions')" id="tab-sessions-btn"
-                                    class="py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors">
-                                🔴 Live Sessions
+                                    class="py-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-semibold text-sm transition-colors flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Live sessions
                             </button>
                         </nav>
                     </div>
@@ -130,16 +133,10 @@
 
                     {{-- Section Indicator + Lesson Title --}}
                     <div class="mb-6">
-                        {{-- Section Breadcrumb --}}
-                        <div class="flex items-center text-sm text-gray-500 mb-2">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                            </svg>
-                            <span>Section {{ $currentLesson->section->order }}: {{ $currentLesson->section->title }}</span>
-                        </div>
-                        
-                        {{-- Lesson Title --}}
-                        <h1 class="text-2xl font-bold text-gray-900">{{ $currentLesson->title }}</h1>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-accent-dark mb-1.5">
+                            Section {{ $currentLesson->section->order }} · {{ $currentLesson->section->title }}
+                        </p>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{{ $currentLesson->title }}</h1>
                     </div>
 
                     @php
@@ -150,7 +147,7 @@
 
                     {{-- Video Content (download button hidden; right-click disabled) --}}
                     @if($currentLesson->content_type === 'video')
-                    <div class="bg-black rounded-lg overflow-hidden mb-6">
+                    <div class="bg-black rounded-xl overflow-hidden mb-6 ring-1 ring-black/5 shadow-sm">
                         <video controls controlsList="nodownload noplaybackrate" disablePictureInPicture
                                oncontextmenu="return false" class="w-full" style="max-height: 500px;">
                             <source src="{{ $contentSrc }}" type="video/mp4">
@@ -183,33 +180,42 @@
                     </div>
                     @endif
 
-                    {{-- Mark Complete Button --}}
+                    {{-- Completion panel (time-gate countdown) --}}
                     @php
                         $isCurrentCompleted = in_array($currentLesson->id, $completedLessonIds);
                         $currentLocked = ! $isCurrentCompleted && ($secondsSpent < $requiredSeconds);
+                        $initialPct = $requiredSeconds > 0 ? min(100, round($secondsSpent / $requiredSeconds * 100)) : 100;
                     @endphp
-                    <div class="flex flex-col items-center mb-8">
-                        <button id="mark-complete-btn"
-                            data-course-slug="{{ $course->slug }}"
-                            data-lesson-id="{{ $currentLesson->id }}"
-                            data-required-seconds="{{ $requiredSeconds }}"
-                            data-spent-seconds="{{ $secondsSpent }}"
-                            data-heartbeat-interval="{{ $heartbeatInterval }}"
-                            data-completed="{{ $isCurrentCompleted ? '1' : '0' }}"
-                            @if($currentLocked) disabled @endif
-                            class="px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200
-                                           {{ $isCurrentCompleted
-                                              ? 'bg-success text-white hover:bg-success-dark'
-                                              : ($currentLocked
-                                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                 : 'bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white') }}">
-                            @if($isCurrentCompleted)
-                            ✓ Completed — Click to Undo
-                            @else
-                            Mark as Complete
-                            @endif
-                        </button>
-                        <p id="lesson-timer-hint" class="text-sm text-gray-500 mt-3 {{ $isCurrentCompleted ? 'hidden' : '' }}"></p>
+                    <div id="completion-panel" class="rounded-2xl border border-gray-200 bg-white shadow-sm p-4 sm:p-5 mb-8">
+                        <div class="flex items-center gap-4">
+                            <div id="completion-icon" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
+                                {{ $isCurrentCompleted ? 'bg-success-light text-success-dark' : ($currentLocked ? 'bg-gray-100 text-gray-400' : 'bg-accent/10 text-accent-dark') }}"></div>
+
+                            <div class="flex-1 min-w-0">
+                                <p id="completion-title" class="font-semibold text-gray-900 text-sm sm:text-base"></p>
+                                <p id="lesson-timer-hint" class="text-sm text-gray-500 mt-0.5"></p>
+                                <div id="lesson-time-track" class="mt-2.5 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden {{ $isCurrentCompleted || ! $currentLocked ? 'hidden' : '' }}">
+                                    <div id="lesson-time-bar" class="h-full bg-accent rounded-full transition-all duration-700 ease-out" style="width: {{ $initialPct }}%"></div>
+                                </div>
+                            </div>
+
+                            <button id="mark-complete-btn"
+                                data-course-slug="{{ $course->slug }}"
+                                data-lesson-id="{{ $currentLesson->id }}"
+                                data-required-seconds="{{ $requiredSeconds }}"
+                                data-spent-seconds="{{ $secondsSpent }}"
+                                data-heartbeat-interval="{{ $heartbeatInterval }}"
+                                data-completed="{{ $isCurrentCompleted ? '1' : '0' }}"
+                                @if($currentLocked) disabled @endif
+                                class="flex-shrink-0 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200
+                                               {{ $isCurrentCompleted
+                                                  ? 'bg-success text-white hover:bg-success-dark'
+                                                  : ($currentLocked
+                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                     : 'bg-accent text-white hover:bg-accent-dark') }}">
+                                {{ $isCurrentCompleted ? 'Completed' : 'Mark complete' }}
+                            </button>
+                        </div>
                     </div>
 
                     {{-- Previous / Next Navigation --}}
@@ -404,32 +410,51 @@
         let completed = markBtn.dataset.completed === '1';
         let confirming = false;
 
-        const lockedClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-gray-200 text-gray-500 cursor-not-allowed';
-        const readyClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white';
-        const doneClasses = 'px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 bg-success text-white hover:bg-success-dark';
+        const title = document.getElementById('completion-title');
+        const iconBox = document.getElementById('completion-icon');
+        const track = document.getElementById('lesson-time-track');
+        const bar = document.getElementById('lesson-time-bar');
 
+        const btnBase = 'flex-shrink-0 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 ';
+        const lockedBtn = btnBase + 'bg-gray-100 text-gray-400 cursor-not-allowed';
+        const readyBtn = btnBase + 'bg-accent text-white hover:bg-accent-dark';
+        const doneBtn = btnBase + 'bg-success text-white hover:bg-success-dark';
+
+        const clockIcon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        const checkIcon = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
+
+        const fmt = (s) => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
         const ready = () => spent >= required;
+
+        function setIcon(kind) {
+            const tone = kind === 'done' ? 'bg-success-light text-success-dark'
+                : kind === 'ready' ? 'bg-accent/10 text-accent-dark'
+                : 'bg-gray-100 text-gray-400';
+            if (iconBox) { iconBox.className = 'w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ' + tone; iconBox.innerHTML = kind === 'locked' ? clockIcon : checkIcon; }
+        }
 
         function refreshGate() {
             if (completed) {
-                markBtn.disabled = false;
-                markBtn.className = doneClasses;
-                markBtn.textContent = '✓ Completed — Click to Undo';
-                if (hint) hint.classList.add('hidden');
+                markBtn.disabled = false; markBtn.className = doneBtn; markBtn.textContent = 'Completed';
+                setIcon('done');
+                if (title) title.textContent = 'Lesson completed';
+                if (hint) hint.textContent = 'Nicely done — click to undo if you need to.';
+                if (track) track.classList.add('hidden');
                 return;
             }
-            if (hint) hint.classList.remove('hidden');
             if (ready()) {
-                markBtn.disabled = false;
-                markBtn.className = readyClasses;
-                markBtn.textContent = 'Mark as Complete';
-                if (hint) hint.textContent = 'You can now mark this lesson complete.';
+                markBtn.disabled = false; markBtn.className = readyBtn; markBtn.textContent = 'Mark complete';
+                setIcon('ready');
+                if (title) title.textContent = 'Ready to complete';
+                if (hint) hint.textContent = "You've spent enough time on this lesson.";
+                if (track) track.classList.add('hidden');
             } else {
-                markBtn.disabled = true;
-                markBtn.className = lockedClasses;
-                markBtn.textContent = 'Mark as Complete';
-                const left = Math.max(required - display, 0);
-                if (hint) hint.textContent = `Keep watching — ${left}s of active time left on this lesson.`;
+                markBtn.disabled = true; markBtn.className = lockedBtn; markBtn.textContent = 'Mark complete';
+                setIcon('locked');
+                if (title) title.textContent = 'Keep going to unlock';
+                if (hint) hint.textContent = `${fmt(required - display)} of active time left on this lesson.`;
+                if (track) track.classList.remove('hidden');
+                if (bar) bar.style.width = (required > 0 ? Math.min(100, display / required * 100) : 100) + '%';
             }
         }
 
