@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 @layer components {
-    /* Buttons */
+    /* Buttons — flat, solid, corporate */
     .btn-brand {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white bg-brand-gradient-r shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 active:translate-y-0;
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 font-semibold text-white bg-accent shadow-sm transition-colors duration-200 hover:bg-accent-dark;
     }
     .btn-primary {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white bg-primary shadow-sm transition-all duration-200 hover:bg-primary-700 hover:-translate-y-0.5;
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 font-semibold text-white bg-primary shadow-sm transition-colors duration-200 hover:bg-primary-700;
     }
     .btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 font-semibold text-primary shadow-sm transition-all duration-200 hover:border-accent hover:text-accent;
+        @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-primary transition-colors duration-200 hover:bg-gray-50 hover:border-gray-400;
     }
 
-    /* Cards */
+    /* Cards — subtle border + light shadow */
     .card {
-        @apply rounded-2xl border border-gray-100 bg-white shadow-card;
+        @apply rounded-xl border border-gray-200 bg-white shadow-card;
     }
     .card-hover {
-        @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover;
+        @apply transition-shadow duration-200 hover:shadow-card-hover;
     }
 
     /* Badges / chips */
@@ -27,7 +27,7 @@
         @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold;
     }
     .badge-accent {
-        @apply badge bg-accent/10 text-accent;
+        @apply badge bg-accent/10 text-accent-dark;
     }
     .badge-success {
         @apply badge bg-success-light text-success-dark;
@@ -37,13 +37,10 @@
     }
 
     /* Typography helpers */
-    .text-gradient {
-        @apply bg-brand-gradient-r bg-clip-text text-transparent;
-    }
     .section-title {
-        @apply text-3xl font-extrabold text-primary sm:text-4xl;
+        @apply text-3xl font-bold text-primary sm:text-4xl;
     }
     .eyebrow {
-        @apply text-sm font-semibold uppercase tracking-wider text-secondary-dark;
+        @apply text-sm font-semibold uppercase tracking-wide text-accent-dark;
     }
 }

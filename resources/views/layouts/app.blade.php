@@ -23,11 +23,11 @@
                     <div class="flex justify-between h-16 items-center">
                         {{-- Logo & Brand --}}
                         <a href="{{ url('/') }}" class="flex items-center gap-3 group">
-                            <div class="w-10 h-10 rounded-xl bg-brand-gradient-r flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
-                                <span class="text-white font-black text-lg">S</span>
+                            <div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <span class="text-white font-bold text-lg">S</span>
                             </div>
                             <div class="leading-tight">
-                                <span class="text-white font-extrabold text-xl">SACS</span>
+                                <span class="text-white font-bold text-xl">SACS</span>
                                 <span class="text-secondary-light text-xs block -mt-1 tracking-wide">Computers</span>
                             </div>
                         </a>
@@ -50,7 +50,7 @@
                                 {{-- User Dropdown --}}
                                 <div class="relative ml-1" x-data="{ open: false }">
                                     <button @click="open = !open" class="flex items-center gap-2 text-white rounded-full pl-1 pr-2 py-1 hover:bg-white/10 transition-colors">
-                                        <span class="w-8 h-8 rounded-full bg-brand-gradient-r flex items-center justify-center text-sm font-bold">
+                                        <span class="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-sm font-bold">
                                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                                         </span>
                                         <span class="text-sm hidden sm:block">{{ auth()->user()->name }}</span>
@@ -75,7 +75,7 @@
                                 <a href="{{ route('login') }}" class="text-gray-100 hover:text-white px-3 py-2 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors">
                                     Login
                                 </a>
-                                <a href="{{ route('register') }}" class="bg-brand-gradient-r text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-glow hover:-translate-y-0.5 transition-all">
+                                <a href="{{ route('register') }}" class="bg-accent text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-accent-dark transition-colors">
                                     Get Started
                                 </a>
                             @endauth
@@ -132,11 +132,11 @@
                     <div class="grid gap-8 md:grid-cols-4">
                         <div class="md:col-span-2">
                             <div class="flex items-center gap-3 mb-4">
-                                <div class="w-10 h-10 rounded-xl bg-brand-gradient-r flex items-center justify-center shadow-glow">
-                                    <span class="text-white font-black">S</span>
+                                <div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+                                    <span class="text-white font-bold">S</span>
                                 </div>
                                 <div class="leading-tight">
-                                    <span class="text-white font-extrabold text-lg">SACS Computers</span>
+                                    <span class="text-white font-bold text-lg">SACS Computers</span>
                                     <span class="text-secondary-light text-xs block -mt-0.5">Learning Platform</span>
                                 </div>
                             </div>
