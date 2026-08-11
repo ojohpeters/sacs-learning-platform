@@ -95,11 +95,18 @@
 
                     <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ $lesson->title }}</h1>
 
+                    @php
+                        $contentSrc = \Illuminate\Support\Str::startsWith($lesson->content_path, 'http')
+                            ? $lesson->content_path
+                            : route('lesson.content', [$course->slug, $lesson->id]);
+                    @endphp
+
                     {{-- Video Content --}}
                     @if($lesson->content_type === 'video')
                         <div class="bg-black rounded-lg overflow-hidden mb-6">
-                            <video controls class="w-full" style="max-height: 500px;">
-                                <source src="{{ Str::startsWith($lesson->content_path, 'http') ? $lesson->content_path : route('lesson.content', [$course->slug, $lesson->id]) }}" type="video/mp4">
+                            <video controls controlsList="nodownload noplaybackrate" disablePictureInPicture
+                                   oncontextmenu="return false" class="w-full" style="max-height: 500px;">
+                                <source src="{{ $contentSrc }}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                         </div>
@@ -108,7 +115,16 @@
                     {{-- Image Content --}}
                     @if($lesson->content_type === 'image')
                         <div class="bg-white rounded-lg overflow-hidden mb-6">
-                            <img src="{{ Str::startsWith($lesson->content_path, 'http') ? $lesson->content_path : route('lesson.content', [$course->slug, $lesson->id]) }}" alt="{{ $lesson->title }}" class="w-full">
+                            <img src="{{ $contentSrc }}" alt="{{ $lesson->title }}" class="w-full" oncontextmenu="return false">
+                        </div>
+                    @endif
+
+                    {{-- PDF Content (inline viewer) --}}
+                    @if($lesson->content_type === 'pdf')
+                        <div class="bg-gray-100 rounded-lg overflow-hidden mb-6 shadow-sm" style="height: 80vh;">
+                            <iframe src="{{ $contentSrc }}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+                                    class="w-full h-full" style="border: 0;" oncontextmenu="return false"
+                                    title="{{ $lesson->title }}"></iframe>
                         </div>
                     @endif
 

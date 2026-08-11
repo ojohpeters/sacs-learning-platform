@@ -52,7 +52,11 @@ class LessonContentController extends Controller
         }
 
         // response()->file() emits a BinaryFileResponse, which supports HTTP Range
-        // requests — required for seeking within video.
-        return response()->file(Storage::disk('local')->path($lesson->content_path));
+        // requests — required for seeking within video. Serve it inline (viewed
+        // in the browser, not downloaded) and stop content-type sniffing.
+        return response()->file(Storage::disk('local')->path($lesson->content_path), [
+            'Content-Disposition' => 'inline',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

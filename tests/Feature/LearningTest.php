@@ -151,7 +151,7 @@ class LearningTest extends TestCase
             ->postJson(route('learning.heartbeat', [$course->slug, $lesson->id]))
             ->assertOk()
             ->assertJson(['canComplete' => false])
-            ->assertJsonPath('requiredSeconds', 300);
+            ->assertJsonPath('requiredSeconds', 600); // video → full length
 
         $this->assertDatabaseHas('lesson_progress', [
             'user_id' => $user->id,
@@ -164,7 +164,8 @@ class LearningTest extends TestCase
 
     public function test_repeated_heartbeats_accrue_over_time_until_completable(): void
     {
-        [$course, $lesson] = $this->courseWithLesson(60); // video → requires 30s
+        // Override to 30s so the test targets the accrual mechanic, not the rule.
+        [$course, $lesson] = $this->courseWithLesson(60, ['min_seconds' => 30]);
         $user = User::factory()->create();
         Enrollment::factory()->create([
             'user_id' => $user->id,
@@ -208,19 +209,30 @@ class LearningTest extends TestCase
         ]);
     }
 
-    public function test_reading_lesson_uses_a_short_default_requirement(): void
+    public function test_text_lesson_requirement_scales_with_reading_length(): void
     {
-        // A text page's long "duration" should not gate it — it uses the short read floor.
-        $lesson = Lesson::factory()->make(['content_type' => 'text', 'duration' => 600, 'min_seconds' => null]);
+        // 400 words at 200 wpm = 120s.
+        $long = Lesson::factory()->make([
+            'content_type' => 'text',
+            'content_body' => str_repeat('word ', 400),
+            'min_seconds' => null,
+        ]);
+        $this->assertSame(120, $long->requiredSeconds());
 
-        $this->assertSame((int) config('learning.reading_seconds'), $lesson->requiredSeconds());
+        // A tiny page falls back to the reading floor.
+        $short = Lesson::factory()->make([
+            'content_type' => 'text',
+            'content_body' => 'Just a few words here.',
+            'min_seconds' => null,
+        ]);
+        $this->assertSame((int) config('learning.min_reading_seconds'), $short->requiredSeconds());
     }
 
-    public function test_video_lesson_uses_duration_fraction(): void
+    public function test_video_lesson_requires_its_full_length(): void
     {
-        $lesson = Lesson::factory()->make(['content_type' => 'video', 'duration' => 600, 'min_seconds' => null]);
+        $lesson = Lesson::factory()->make(['content_type' => 'video', 'duration' => 480, 'min_seconds' => null]);
 
-        $this->assertSame(300, $lesson->requiredSeconds()); // 600 * 0.5
+        $this->assertSame(480, $lesson->requiredSeconds());
     }
 
     public function test_min_seconds_override_is_respected(): void
@@ -244,5 +256,36 @@ class LearningTest extends TestCase
             ->postJson(route('learning.toggle-complete', [$course->slug, $lesson->id]))
             ->assertOk()
             ->assertJson(['completed' => true]);
+    }
+
+    public function test_pdf_lesson_renders_inline_viewer(): void
+    {
+        [$course, $lesson] = $this->courseWithLesson(0, [
+            'content_type' => 'pdf',
+            'content_path' => 'course-content/doc.pdf',
+        ]);
+        $user = User::factory()->create();
+        Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
+
+        $this->actingAs($user)
+            ->get(route('learning.lesson', [$course->slug, $lesson->id]))
+            ->assertOk()
+            ->assertSee('<iframe', false)
+            ->assertSee('#toolbar=0', false);
+    }
+
+    public function test_video_lesson_disables_download(): void
+    {
+        [$course, $lesson] = $this->courseWithLesson(120, [
+            'content_type' => 'video',
+            'content_path' => 'course-content/clip.mp4',
+        ]);
+        $user = User::factory()->create();
+        Enrollment::factory()->create(['user_id' => $user->id, 'course_id' => $course->id]);
+
+        $this->actingAs($user)
+            ->get(route('learning.lesson', [$course->slug, $lesson->id]))
+            ->assertOk()
+            ->assertSee('controlsList="nodownload', false);
     }
 }
