@@ -42,23 +42,17 @@
     {{-- ============================================ --}}
     {{-- NAVBAR --}}
     {{-- ============================================ --}}
-    <nav class="bg-primary sticky top-0 z-50 shadow-lg">
+    <nav class="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-200">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="flex justify-between h-16 items-center">
-                <a href="/" class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-lg">S</span>
-                    </div>
-                    <div>
-                        <span class="text-white font-bold text-lg">SACS</span>
-                        <span class="text-accent-light text-xs block -mt-1">Computers</span>
-                    </div>
+            <div class="flex justify-between h-20 items-center">
+                <a href="/" class="flex items-center">
+                    <img src="{{ asset('images/logo.png') }}" alt="SACS Computers" class="h-36 w-auto">
                 </a>
                 <div class="flex items-center space-x-4">
                     @auth
-                    <a href="{{ route('student.courses') }}" class="text-accent-light hover:text-white text-sm font-medium">My Courses</a>
+                    <a href="{{ route('student.courses') }}" class="text-gray-700 hover:text-accent text-sm font-medium transition-colors">My Courses</a>
                     @else
-                    <a href="{{ route('login') }}" class="text-accent-light hover:text-white text-sm font-medium">Login</a>
+                    <a href="{{ route('login') }}" class="text-gray-700 hover:text-accent text-sm font-medium transition-colors">Login</a>
                     <a href="{{ route('register') }}" class="bg-accent text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-accent-dark transition-colors">Get Started</a>
                     @endauth
                 </div>
@@ -155,11 +149,11 @@
                             </div>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500">Live Online</span>
-                                <span class="font-semibold text-gray-900">₦{{ number_format($course->price - 10000 + 4000) }}</span>
+                                <span class="font-semibold text-gray-900">₦{{ number_format($course->sync_price) }}</span>
                             </div>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500">Self-Paced</span>
-                                <span class="font-semibold text-green-600">₦{{ number_format($course->price - 25000 + 4000) }}</span>
+                                <span class="font-semibold text-green-600">₦{{ number_format($course->async_price) }}</span>
                             </div>
                         </div>
 
@@ -325,14 +319,8 @@
     <footer class="bg-primary py-12">
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center space-x-3 mb-6 md:mb-0">
-                    <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold">S</span>
-                    </div>
-                    <div>
-                        <span class="text-white font-bold">SACS Computers</span>
-                        <span class="text-gray-400 text-sm block">Learning Platform</span>
-                    </div>
+                <div class="flex items-center mb-6 md:mb-0">
+                    <img src="{{ asset('images/logo.JPG') }}" alt="SACS Computers" class="h-24 w-auto bg-white rounded-lg p-1">
                 </div>
                 <div class="flex space-x-6 text-gray-400 text-sm">
                     <a href="{{ route('courses.catalog') }}" class="hover:text-white transition-colors">Courses</a>

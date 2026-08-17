@@ -29,6 +29,8 @@ class CourseController extends Controller
             'short_description' => 'required|string|max:500',
             'full_description' => 'required|string',
             'price' => 'required|numeric|min:0',
+            'async_price' => 'required|numeric|min:0',
+            'lesson_min_minutes' => 'required|integer|min:1',
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'is_published' => 'boolean',
         ]);
@@ -41,10 +43,11 @@ class CourseController extends Controller
 
         Course::create([
             'title' => $validated['title'],
-            'slug' => $this->uniqueSlug($validated['title']),
+            'slug' => Str::slug($validated['title']),
             'short_description' => $validated['short_description'],
             'full_description' => $validated['full_description'],
             'price' => $validated['price'],
+            'async_price' => $validated['async_price'],
             'thumbnail_path' => $thumbnailPath,
             'is_published' => $request->has('is_published'),
         ]);
@@ -65,6 +68,8 @@ class CourseController extends Controller
             'short_description' => 'required|string|max:500',
             'full_description' => 'required|string',
             'price' => 'required|numeric|min:0',
+            'async_price' => 'required|numeric|min:0',
+            'lesson_min_minutes' => 'required|integer|min:1',
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'is_published' => 'boolean',
         ]);

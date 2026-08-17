@@ -38,23 +38,33 @@
                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <p class="text-xs text-gray-500 mt-1">This is the In-Class price. Other prices are auto-calculated.</p>
                 @error('price') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                
-                {{-- Calculated Prices Preview --}}
-                <div class="mt-3 bg-gray-50 rounded-lg p-4">
-                    <p class="text-sm font-medium text-gray-700 mb-2">Prices students will see:</p>
-                    <div class="space-y-1 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">In-Class (Base + Registration)</span>
-                            <span class="font-semibold" id="preview-inclass">₦{{ number_format($course->price + 4000) }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">Live Online (Base - ₦10,000 + Registration)</span>
-                            <span class="font-semibold" id="preview-sync">₦{{ number_format(max($course->price - 10000 + 4000, 0)) }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">Self-Paced (Base - ₦25,000 + Registration)</span>
-                            <span class="font-semibold text-green-600" id="preview-async">₦{{ number_format(max($course->price - 25000 + 4000, 0)) }}</span>
-                        </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Asynchronous Price (₦) — Self-Paced</label>
+                <input type="number" name="async_price" value="{{ old('async_price', $course->async_price) }}" required step="0.01"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Independent price for Self-Paced learning.</p>
+                @error('async_price') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Timer (minutes)</label>
+                <input type="number" name="lesson_min_minutes" value="{{ old('lesson_min_minutes', $course->lesson_min_minutes) }}" required min="1"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Students must spend this long on a lesson before marking it complete.</p>
+            </div>
+
+            <div class="mt-3 bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-medium text-gray-700 mb-2">Prices students will see:</p>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">In-Class (Base + Registration)</span>
+                        <span class="font-semibold" id="preview-inclass">₦{{ number_format($course->inclass_price) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Live Online (Base - ₦10,000 + Registration)</span>
+                        <span class="font-semibold" id="preview-sync">₦{{ number_format($course->sync_price) }}</span>
                     </div>
                 </div>
             </div>
@@ -64,7 +74,6 @@
                     var base = parseInt(this.value) || 0;
                     document.getElementById('preview-inclass').textContent = '₦' + (base + 4000).toLocaleString();
                     document.getElementById('preview-sync').textContent = '₦' + Math.max(base - 10000 + 4000, 0).toLocaleString();
-                    document.getElementById('preview-async').textContent = '₦' + Math.max(base - 25000 + 4000, 0).toLocaleString();
                 });
             </script>
 
@@ -80,7 +89,7 @@
                     </div>
                 @endif
                 <input type="file" name="thumbnail" accept="image/*"
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-accent file:text-white hover:file:bg-accent-dark">
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-600 file:text-white hover:file:bg-blue-700">
                 <p class="text-xs text-gray-500 mt-1">Recommended: 600×400 pixels. JPG, PNG, or WebP. Max 2MB.</p>
                 @error('thumbnail') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
             </div>

@@ -15,16 +15,9 @@
         {{-- Sidebar --}}
         <div class="w-64 bg-gray-900 text-white flex-shrink-0">
             <div class="p-6">
-                <div class="flex items-center space-x-3 mb-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold">S</span>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold text-white">SACS Computers</h1>
-                        <p class="text-xs text-gray-400">Admin Panel</p>
-                    </div>
-                </div>
-                <p class="text-sm text-gray-400 mt-2">{{ auth()->user()->name }}</p>
+                <img src="{{ asset('images/logo.JPG') }}" alt="SACS Computers" class="w-full max-w-[120px] bg-white rounded-lg p-2">
+                <p class="text-xs text-gray-400 mt-3">Admin Panel</p>
+                <p class="text-sm text-gray-400 mt-1">{{ auth()->user()->name }}</p>
             </div>
 
             <nav class="mt-4">
@@ -106,22 +99,56 @@
                                 'removeFormat'
                             ],
                             heading: {
-                                options: [
-                                    { model: 'paragraph', title: 'Paragraph' },
-                                    { model: 'heading2', view: 'h2', title: 'Heading 2' },
-                                    { model: 'heading3', view: 'h3', title: 'Heading 3' },
-                                    { model: 'heading4', view: 'h4', title: 'Heading 4' },
+                                options: [{
+                                        model: 'paragraph',
+                                        title: 'Paragraph'
+                                    },
+                                    {
+                                        model: 'heading2',
+                                        view: 'h2',
+                                        title: 'Heading 2'
+                                    },
+                                    {
+                                        model: 'heading3',
+                                        view: 'h3',
+                                        title: 'Heading 3'
+                                    },
+                                    {
+                                        model: 'heading4',
+                                        view: 'h4',
+                                        title: 'Heading 4'
+                                    },
                                 ]
                             },
                             codeBlock: {
-                                languages: [
-                                    { language: 'php', label: 'PHP' },
-                                    { language: 'javascript', label: 'JavaScript' },
-                                    { language: 'html', label: 'HTML' },
-                                    { language: 'css', label: 'CSS' },
-                                    { language: 'python', label: 'Python' },
-                                    { language: 'sql', label: 'SQL' },
-                                    { language: 'plaintext', label: 'Plain text' },
+                                languages: [{
+                                        language: 'php',
+                                        label: 'PHP'
+                                    },
+                                    {
+                                        language: 'javascript',
+                                        label: 'JavaScript'
+                                    },
+                                    {
+                                        language: 'html',
+                                        label: 'HTML'
+                                    },
+                                    {
+                                        language: 'css',
+                                        label: 'CSS'
+                                    },
+                                    {
+                                        language: 'python',
+                                        label: 'Python'
+                                    },
+                                    {
+                                        language: 'sql',
+                                        label: 'SQL'
+                                    },
+                                    {
+                                        language: 'plaintext',
+                                        label: 'Plain text'
+                                    },
                                 ]
                             },
                             placeholder: 'Type your content here...',

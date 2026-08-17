@@ -181,7 +181,7 @@ class CheckoutController extends Controller
         $price = match ($learningType) {
             'inclass' => $basePrice + $registrationFee,
             'sync' => $basePrice - 10000 + $registrationFee,
-            'async' => $basePrice - 25000 + $registrationFee,
+            'async' => $course->async_price ?? 15000,
             default => $basePrice,
         };
 

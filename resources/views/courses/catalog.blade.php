@@ -58,11 +58,11 @@
                             </div>
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-500">Live Online</span>
-                                <span class="font-semibold text-gray-900">₦{{ number_format($course->price - 10000 + 4000) }}</span>
+                                <span class="font-semibold text-gray-900">₦{{ number_format($course->sync_price) }}</span>
                             </div>
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-500">Self-Paced</span>
-                                <span class="font-semibold text-green-600">₦{{ number_format($course->price - 25000 + 4000) }}</span>
+                                <span class="font-semibold text-green-600">₦{{ number_format($course->async_price) }}</span>
                             </div>
                         </div>
 

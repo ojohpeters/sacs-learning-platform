@@ -13,8 +13,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->string('certificate_code')->nullable()->unique()->after('completed_at');
-            $table->timestamp('certificate_issued_at')->nullable()->after('certificate_code');
+            $table->string('certificate_code')->nullable()->unique();
+            $table->timestamp('certificate_issued_at')->nullable();
         });
     }
 
