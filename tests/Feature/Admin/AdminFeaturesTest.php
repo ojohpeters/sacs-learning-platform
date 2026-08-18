@@ -54,6 +54,8 @@ class AdminFeaturesTest extends TestCase
                 'short_description' => 'Updated short.',
                 'full_description'  => 'Updated full description.',
                 'price'             => 2500,
+                'async_price'       => 15000,
+                'lesson_min_minutes' => 1,
                 'is_published'      => '1',
             ])
             ->assertRedirect(route('admin.courses.index'));

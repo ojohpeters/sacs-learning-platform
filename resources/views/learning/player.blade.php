@@ -1,12 +1,12 @@
 <x-app-layout>
+    
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="font-bold text-lg sm:text-xl text-gray-900 leading-tight truncate">
+        <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ $course->title }}
             </h2>
-            <a href="{{ route('student.courses') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-accent-dark flex-shrink-0 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                My Courses
+            <a href="{{ route('student.courses') }}" class="text-sm text-accent hover:text-accent-dark">
+                ← My Courses
             </a>
         </div>
     </x-slot>
@@ -16,116 +16,145 @@
         {{-- Sidebar: Curriculum --}}
         <div class="w-80 bg-white border-r overflow-y-auto flex-shrink-0">
             {{-- Progress Header --}}
-            <div class="p-5 border-b border-gray-100">
-                <div class="flex items-baseline justify-between mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Your progress</span>
-                    <span class="text-lg font-bold text-primary" id="progress-percent">{{ $progressPercent }}%</span>
+            <div class="p-4 border-b bg-gray-50">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">Your Progress</span>
+                    <span class="text-sm font-bold text-accent" id="progress-percent">{{ $progressPercent }}%</span>
                 </div>
-                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div class="bg-accent h-2 rounded-full transition-all duration-500 ease-out"
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-accent h-2.5 rounded-full transition-all duration-300"
                         id="progress-bar"
                         style="width: {{ $progressPercent }}%"></div>
                 </div>
-                <p class="text-xs text-gray-500 mt-2">
-                    <span id="completed-count">{{ $completedCount }}</span> of <span id="total-count">{{ $course->lessons()->count() }}</span> lessons complete
+                <p class="text-xs text-gray-500 mt-1">
+                    <span id="completed-count">{{ $completedCount }}</span>/<span id="total-count">{{ $totalCount }}</span> completed
                 </p>
                 <a href="{{ route('certificate.show', $course->slug) }}"
                     id="certificate-link"
-                    class="mt-4 inline-flex items-center justify-center gap-2 w-full bg-accent text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-accent-dark transition-colors {{ $progressPercent >= 100 ? '' : 'hidden' }}">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z"/></svg>
-                    Get your certificate
+                    class="mt-3 inline-flex items-center justify-center w-full bg-accent text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition {{ $progressPercent >= 100 ? '' : 'hidden' }}">
+                    🎓 Get your certificate
                 </a>
                 @if($enrollment->learning_type === 'sync')
-                    <a href="{{ route('learning.sessions', $course->slug) }}"
-                        class="mt-2 inline-flex items-center justify-center gap-2 w-full border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-lg hover:border-accent hover:text-accent transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        Live sessions
-                    </a>
+                <a href="{{ route('learning.sessions', $course->slug) }}"
+                    class="mt-2 inline-flex items-center justify-center w-full border border-accent text-accent text-sm font-semibold px-4 py-2 rounded-lg hover:bg-accent hover:text-white transition">
+                    📅 Live sessions
+                </a>
                 @endif
             </div>
 
             {{-- Sections & Lessons --}}
             @foreach($course->sections as $section)
-                @php
-                    $isCurrentSection = isset($currentLesson) && $currentLesson->section_id === $section->id;
-                @endphp
-                <div class="border-b {{ $isCurrentSection ? 'bg-blue-50/50' : '' }}">
-                    <button 
-                        class="w-full text-left px-4 py-3 font-medium flex justify-between items-center transition-colors
+            @php
+            $isCurrentSection = isset($currentLesson) && $currentLesson->section_id === $section->id;
+            @endphp
+            <div class="border-b {{ $isCurrentSection ? 'bg-blue-50/50' : '' }}">
+                <button
+                    class="w-full text-left px-4 py-3 font-medium flex justify-between items-center transition-colors
                                {{ $isCurrentSection ? 'text-accent bg-blue-50' : 'text-gray-900 hover:bg-gray-50' }}"
-                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-90')">
-                        <span class="text-sm flex items-center">
-                            @if($isCurrentSection)
-                                <span class="w-1.5 h-1.5 bg-accent rounded-full mr-2"></span>
-                            @endif
-                            {{ $section->title }}
-                        </span>
-                        <svg class="w-4 h-4 transition-transform {{ $isCurrentSection ? '' : 'rotate-90' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </button>
+                    onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-90')">
+                    <span class="text-sm flex items-center">
+                        @if($isCurrentSection)
+                        <span class="w-2 h-2 bg-accent rounded-full mr-2 animate-pulse"></span>
+                        @endif
+                        {{ $section->title }}
+                        @if($section->quiz && $section->quiz->is_active)
+                        @if(in_array($section->quiz->id, $passedQuizIds))
+                        <span class="ml-2 text-green-500 text-xs">✓</span>
+                        @else
+                        <span class="ml-2 text-orange-500 text-xs">📝</span>
+                        @endif
+                        @endif
+                    </span>
+                    <svg class="w-4 h-4 transition-transform {{ $isCurrentSection ? '' : 'rotate-90' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
 
-                    <div class="bg-gray-50 {{ $isCurrentSection ? '' : 'hidden' }}">
-                        @foreach($section->lessons as $sectionLesson)
-                            <a href="{{ route('learning.lesson', [$course->slug, $sectionLesson->id]) }}"
-                                class="flex items-center px-6 py-3 text-sm hover:bg-gray-100 border-l-2 transition-colors
+                <div class="bg-gray-50 {{ $isCurrentSection ? '' : 'hidden' }}">
+                    @foreach($section->lessons as $sectionLesson)
+                    <a href="{{ route('learning.lesson', [$course->slug, $sectionLesson->id]) }}"
+                        class="flex items-center px-6 py-3 text-sm hover:bg-gray-100 border-l-2 transition-colors
                                               {{ isset($currentLesson) && $currentLesson->id === $sectionLesson->id ? 'border-accent bg-blue-50 text-accent font-medium' : 'border-transparent text-gray-700' }}">
 
-                                {{-- Completion Check --}}
-                                <span class="mr-3 flex-shrink-0">
-                                    @if(in_array($sectionLesson->id, $completedLessonIds))
-                                    <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                    </svg>
-                                    @else
-                                    <div class="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
-                                    @endif
-                                </span>
+                        {{-- Completion Check --}}
+                        <span class="mr-3 flex-shrink-0">
+                            @if(in_array($sectionLesson->id, $completedLessonIds))
+                            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            @else
+                            <div class="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                            @endif
+                        </span>
 
-                                {{-- Lesson Type Icon --}}
-                                <span class="mr-2 flex-shrink-0">
-                                    @if($sectionLesson->content_type === 'video')
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                    </svg>
-                                    @elseif($sectionLesson->content_type === 'text')
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    @else
-                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    @endif
-                                </span>
+                        {{-- Lesson Type Icon --}}
+                        <span class="mr-2 flex-shrink-0">
+                            @if($sectionLesson->content_type === 'video')
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            </svg>
+                            @elseif($sectionLesson->content_type === 'text')
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            @else
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            @endif
+                        </span>
 
-                                <span class="truncate">{{ $sectionLesson->title }}</span>
-                            </a>
-                        @endforeach
-                    </div>
+                        <span class="truncate">{{ $sectionLesson->title }}</span>
+                    </a>
+                    @endforeach
+
+                    @if($section->quiz && $section->quiz->is_active && in_array($section->id, $unlockedSections))
+                    <a href="{{ route('quiz.show', [$course->slug, $section->quiz->id]) }}"
+                        class="flex items-center px-6 py-3 text-sm border-l-2 transition-colors
+                                      {{ in_array($section->quiz->id, $passedQuizIds)
+                                          ? 'border-green-500 bg-green-50 text-green-700 font-medium'
+                                          : 'border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100' }}">
+                        <span class="mr-3">
+                            @if(in_array($section->quiz->id, $passedQuizIds))
+                            ✅
+                            @else
+                            📝
+                            @endif
+                        </span>
+                        {{ $section->quiz->title }}
+                        <span class="ml-auto text-xs">
+                            @if(in_array($section->quiz->id, $passedQuizIds))
+                            Passed
+                            @else
+                            {{ $section->quiz->passing_score }}% to pass
+                            @endif
+                        </span>
+                    </a>
+                    @endif
                 </div>
+            </div>
             @endforeach
         </div>
 
         {{-- Main Content Area --}}
         <div class="flex-1 overflow-y-auto bg-gray-100">
-            
+
             {{-- Tabs: Only show for sync students --}}
             @if($enrollment->learning_type === 'sync')
-                <div class="bg-white border-b border-gray-100">
-                    <div class="max-w-4xl mx-auto px-6">
-                        <nav class="flex gap-6">
-                            <button onclick="switchTab('content')" id="tab-content-btn"
-                                    class="py-3.5 px-1 border-b-2 border-accent text-accent font-semibold text-sm transition-colors">
-                                Course content
-                            </button>
-                            <button onclick="switchTab('sessions')" id="tab-sessions-btn"
-                                    class="py-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-semibold text-sm transition-colors flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Live sessions
-                            </button>
-                        </nav>
-                    </div>
+            <div class="bg-white border-b">
+                <div class="max-w-4xl mx-auto px-6">
+                    <nav class="flex space-x-8">
+                        <button onclick="switchTab('content')" id="tab-content-btn"
+                            class="py-3 px-1 border-b-2 border-accent text-accent font-medium text-sm transition-colors">
+                            📖 Course Content
+                        </button>
+                        <button onclick="switchTab('sessions')" id="tab-sessions-btn"
+                            class="py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors">
+                            🔴 Live Sessions
+                        </button>
+                    </nav>
                 </div>
+            </div>
             @endif
             <div id="tab-content" class="{{ $enrollment->learning_type === 'sync' ? '' : '' }}">
                 @if(isset($currentLesson))
@@ -133,10 +162,16 @@
 
                     {{-- Section Indicator + Lesson Title --}}
                     <div class="mb-6">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-accent-dark mb-1.5">
-                            Section {{ $currentLesson->section->order }} · {{ $currentLesson->section->title }}
-                        </p>
-                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{{ $currentLesson->title }}</h1>
+                        {{-- Section Breadcrumb --}}
+                        <div class="flex items-center text-sm text-gray-500 mb-2">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            <span>Section {{ $currentLesson->section->order }}: {{ $currentLesson->section->title }}</span>
+                        </div>
+
+                        {{-- Lesson Title --}}
+                        <h1 class="text-2xl font-bold text-gray-900">{{ $currentLesson->title }}</h1>
                     </div>
 
                     @php
@@ -145,7 +180,7 @@
                             : route('lesson.content', [$course->slug, $currentLesson->id]);
                     @endphp
 
-                    {{-- Video Content (download button hidden; right-click disabled) --}}
+                    {{-- Video (download button hidden; right-click disabled) --}}
                     @if($currentLesson->content_type === 'video')
                     <div class="bg-black rounded-xl overflow-hidden mb-6 ring-1 ring-black/5 shadow-sm">
                         <video controls controlsList="nodownload noplaybackrate" disablePictureInPicture
@@ -156,15 +191,14 @@
                     </div>
                     @endif
 
-                    {{-- Image Content --}}
+                    {{-- Image --}}
                     @if($currentLesson->content_type === 'image')
                     <div class="bg-white rounded-lg overflow-hidden mb-6 shadow-sm">
-                        <img src="{{ $contentSrc }}" alt="{{ $currentLesson->title }}" class="w-full"
-                             oncontextmenu="return false">
+                        <img src="{{ $contentSrc }}" alt="{{ $currentLesson->title }}" class="w-full" oncontextmenu="return false">
                     </div>
                     @endif
 
-                    {{-- PDF Content (rendered inline; viewer toolbar/download hidden) --}}
+                    {{-- PDF (rendered inline; viewer toolbar/download hidden) --}}
                     @if($currentLesson->content_type === 'pdf')
                     <div class="bg-gray-100 rounded-lg overflow-hidden mb-6 shadow-sm" style="height: 80vh;">
                         <iframe src="{{ $contentSrc }}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
@@ -217,29 +251,48 @@
                             </button>
                         </div>
                     </div>
-
                     {{-- Previous / Next Navigation --}}
                     <div class="flex justify-between items-center pb-12">
-                        @if($prevLesson)
-                        <a href="{{ route('learning.lesson', [$course->slug, $prevLesson->id]) }}"
+                        @if(isset($prevItem))
+                        @if($prevItem['type'] === 'quiz')
+                        <a href="{{ route('quiz.show', [$course->slug, $prevItem['quiz']->id]) }}"
+                            class="flex items-center px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Previous: {{ $prevItem['quiz']->title }}
+                        </a>
+                        @else
+                        <a href="{{ route('learning.lesson', [$course->slug, $prevItem['lesson']->id]) }}"
                             class="flex items-center px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                             Previous Lesson
                         </a>
+                        @endif
                         @else
                         <div></div>
                         @endif
 
-                        @if($nextLesson)
-                        <a href="{{ route('learning.lesson', [$course->slug, $nextLesson->id]) }}"
-                            class="flex items-center px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors">
+                        @if(isset($nextItem))
+                        @if($nextItem['type'] === 'quiz')
+                        <a href="{{ route('quiz.show', [$course->slug, $nextItem['quiz']->id]) }}"
+                            class="flex items-center px-6 py-3 bg-accent     text-white rounded-lg hover:bg-orange-600 transition-colors">
+                            Take Quiz: {{ $nextItem['quiz']->title }}
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                        @else
+                        <a href="{{ route('learning.lesson', [$course->slug, $nextItem['lesson']->id]) }}"
+                           class="flex items-center px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors">
                             Next Lesson
                             <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </a>
+                        @endif
                         @else
                         <div></div>
                         @endif
@@ -271,16 +324,16 @@
 
             {{-- Sessions Tab Panel (only for sync students) --}}
             @if($enrollment->learning_type === 'sync')
-                <div id="tab-sessions" class="hidden">
-                    <div class="max-w-4xl mx-auto py-8 px-6">
-                        <h1 class="text-2xl font-bold text-gray-900 mb-8">Live Sessions</h1>
-                        
-                        @php
-                            $sessions = $course->sessions()->orderBy('session_date')->orderBy('start_time')->get();
-                            $upcomingSessions = $sessions->where('status', 'upcoming')->where('session_date', '>=', now()->toDateString());
-                            $pastSessions = $sessions->filter(function($session) {
-                                return $session->status === 'completed' || $session->session_date < now()->toDateString();
-                            });
+            <div id="tab-sessions" class="hidden">
+                <div class="max-w-4xl mx-auto py-8 px-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-8">Live Sessions</h1>
+
+                    @php
+                    $sessions = $course->sessions()->orderBy('session_date')->orderBy('start_time')->get();
+                    $upcomingSessions = $sessions->where('status', 'upcoming')->where('session_date', '>=', now()->toDateString());
+                    $pastSessions = $sessions->filter(function($session) {
+                    return $session->status === 'completed' || $session->session_date < now()->toDateString();
+                        });
                         @endphp
 
                         {{-- Upcoming Sessions --}}
@@ -290,80 +343,80 @@
                                 Upcoming Sessions
                             </h2>
                             @if($upcomingSessions->isEmpty())
-                                <div class="bg-white rounded-lg p-8 text-center text-gray-500 shadow-sm">
-                                    <p>No upcoming sessions scheduled yet.</p>
-                                    <p class="text-sm mt-1">Check back soon for live class dates.</p>
-                                </div>
+                            <div class="bg-white rounded-lg p-8 text-center text-gray-500 shadow-sm">
+                                <p>No upcoming sessions scheduled yet.</p>
+                                <p class="text-sm mt-1">Check back soon for live class dates.</p>
+                            </div>
                             @else
-                                <div class="space-y-4">
-                                    @foreach($upcomingSessions as $session)
-                                        <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <h3 class="font-semibold text-gray-900 text-lg">{{ $session->title }}</h3>
-                                                    <div class="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                                                        <span class="flex items-center">
-                                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                            </svg>
-                                                            {{ $session->session_date->format('l, F j, Y') }}
-                                                        </span>
-                                                        <span class="flex items-center">
-                                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                            </svg>
-                                                            {{ date('h:i A', strtotime($session->start_time)) }} - {{ date('h:i A', strtotime($session->end_time)) }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                @if($session->meeting_link)
-                                                    <a href="{{ $session->meeting_link }}" target="_blank" 
-                                                       class="bg-accent text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-accent-dark transition-colors flex items-center">
-                                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                                        </svg>
-                                                        Join Meeting
-                                                    </a>
-                                                @endif
+                            <div class="space-y-4">
+                                @foreach($upcomingSessions as $session)
+                                <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900 text-lg">{{ $session->title }}</h3>
+                                            <div class="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                                                <span class="flex items-center">
+                                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    {{ $session->session_date->format('l, F j, Y') }}
+                                                </span>
+                                                <span class="flex items-center">
+                                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    {{ date('h:i A', strtotime($session->start_time)) }} - {{ date('h:i A', strtotime($session->end_time)) }}
+                                                </span>
                                             </div>
                                         </div>
-                                    @endforeach
+                                        @if($session->meeting_link)
+                                        <a href="{{ $session->meeting_link }}" target="_blank"
+                                            class="bg-accent text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-accent-dark transition-colors flex items-center">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                            </svg>
+                                            Join Meeting
+                                        </a>
+                                        @endif
+                                    </div>
                                 </div>
+                                @endforeach
+                            </div>
                             @endif
                         </div>
 
                         {{-- Past Sessions --}}
                         @if($pastSessions->isNotEmpty())
-                            <div>
-                                <h2 class="text-lg font-semibold text-gray-900 mb-4">Past Sessions</h2>
-                                <div class="space-y-3">
-                                    @foreach($pastSessions as $session)
-                                        <div class="bg-white rounded-lg shadow-sm p-5 opacity-75">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <h3 class="font-medium text-gray-900">{{ $session->title }}</h3>
-                                                    <p class="text-sm text-gray-500 mt-1">
-                                                        {{ $session->session_date->format('M d, Y') }} • {{ date('h:i A', strtotime($session->start_time)) }}
-                                                    </p>
-                                                </div>
-                                                @if($session->recording_link)
-                                                    <a href="{{ $session->recording_link }}" target="_blank"
-                                                       class="text-accent hover:text-accent-dark text-sm font-medium flex items-center">
-                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                        </svg>
-                                                        Watch Recording
-                                                    </a>
-                                                @endif
-                                            </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900 mb-4">Past Sessions</h2>
+                            <div class="space-y-3">
+                                @foreach($pastSessions as $session)
+                                <div class="bg-white rounded-lg shadow-sm p-5 opacity-75">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="font-medium text-gray-900">{{ $session->title }}</h3>
+                                            <p class="text-sm text-gray-500 mt-1">
+                                                {{ $session->session_date->format('M d, Y') }} • {{ date('h:i A', strtotime($session->start_time)) }}
+                                            </p>
                                         </div>
-                                    @endforeach
+                                        @if($session->recording_link)
+                                        <a href="{{ $session->recording_link }}" target="_blank"
+                                            class="text-accent hover:text-accent-dark text-sm font-medium flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Watch Recording
+                                        </a>
+                                        @endif
+                                    </div>
                                 </div>
+                                @endforeach
                             </div>
+                        </div>
                         @endif
-                    </div>
                 </div>
+            </div>
             @endif
         </div>
     </div>
@@ -375,7 +428,9 @@
         const sessionsTab = document.getElementById('tab-sessions');
         const contentBtn = document.getElementById('tab-content-btn');
         const sessionsBtn = document.getElementById('tab-sessions-btn');
-        
+
+        if (!contentTab || !sessionsTab) return;
+
         if (tab === 'content') {
             contentTab.classList.remove('hidden');
             sessionsTab.classList.add('hidden');
@@ -393,27 +448,26 @@
         }
     }
 
-    // Mark Complete Button + time-on-lesson gating
+    // Mark Complete + time-on-lesson gating (heartbeat, live countdown)
     document.addEventListener('DOMContentLoaded', function() {
         const markBtn = document.getElementById('mark-complete-btn');
         if (!markBtn) return;
 
         const hint = document.getElementById('lesson-timer-hint');
+        const title = document.getElementById('completion-title');
+        const iconBox = document.getElementById('completion-icon');
+        const track = document.getElementById('lesson-time-track');
+        const bar = document.getElementById('lesson-time-bar');
         const courseSlug = markBtn.dataset.courseSlug;
         const lessonId = markBtn.dataset.lessonId;
         const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
         const required = parseInt(markBtn.dataset.requiredSeconds, 10) || 0;
         const interval = (parseInt(markBtn.dataset.heartbeatInterval, 10) || 15) * 1000;
-        let spent = parseInt(markBtn.dataset.spentSeconds, 10) || 0; // server-confirmed
-        let display = spent;                                         // on-screen, ticks each second
+        let spent = parseInt(markBtn.dataset.spentSeconds, 10) || 0;
+        let display = spent;
         let completed = markBtn.dataset.completed === '1';
         let confirming = false;
-
-        const title = document.getElementById('completion-title');
-        const iconBox = document.getElementById('completion-icon');
-        const track = document.getElementById('lesson-time-track');
-        const bar = document.getElementById('lesson-time-bar');
 
         const btnBase = 'flex-shrink-0 px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 ';
         const lockedBtn = btnBase + 'bg-gray-100 text-gray-400 cursor-not-allowed';
@@ -427,9 +481,7 @@
         const ready = () => spent >= required;
 
         function setIcon(kind) {
-            const tone = kind === 'done' ? 'bg-success-light text-success-dark'
-                : kind === 'ready' ? 'bg-accent/10 text-accent-dark'
-                : 'bg-gray-100 text-gray-400';
+            const tone = kind === 'done' ? 'bg-success-light text-success-dark' : kind === 'ready' ? 'bg-accent/10 text-accent-dark' : 'bg-gray-100 text-gray-400';
             if (iconBox) { iconBox.className = 'w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ' + tone; iconBox.innerHTML = kind === 'locked' ? clockIcon : checkIcon; }
         }
 
@@ -458,37 +510,20 @@
             }
         }
 
-        // Report active time to the server; it credits only real elapsed time.
         function heartbeat() {
             if (completed || ready() || document.visibilityState !== 'visible') { confirming = false; return; }
             fetch(`/learn/${courseSlug}/lesson/${lessonId}/heartbeat`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
             })
             .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                confirming = false;
-                if (!data) return;
-                spent = data.secondsSpent;
-                if (spent > display) display = spent;
-                refreshGate();
-            })
+            .then(data => { confirming = false; if (!data) return; spent = data.secondsSpent; if (spent > display) display = spent; refreshGate(); })
             .catch(() => { confirming = false; });
         }
 
-        // Tick the visible countdown every second so it feels live.
         function tick() {
             if (completed || ready() || document.visibilityState !== 'visible') return;
-            if (display < required) {
-                display++;
-                refreshGate();
-            }
-            // When the countdown reaches zero, confirm with the server right
-            // away (don't wait for the next interval) so the button unlocks.
-            if (display >= required && !confirming) {
-                confirming = true;
-                heartbeat();
-            }
+            if (display < required) { display++; refreshGate(); }
+            if (display >= required && !confirming) { confirming = true; heartbeat(); }
         }
 
         refreshGate();
@@ -497,25 +532,16 @@
 
         markBtn.addEventListener('click', function() {
             if (markBtn.disabled) return;
-            const url = `/learn/${courseSlug}/lesson/${lessonId}/complete`;
-
-            markBtn.disabled = true;
-            markBtn.style.opacity = '0.7';
-
-            fetch(url, {
+            markBtn.disabled = true; markBtn.style.opacity = '0.7';
+            fetch(`/learn/${courseSlug}/lesson/${lessonId}/complete`, {
                 method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrf,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
+                headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', 'Accept': 'application/json' },
             })
             .then(async response => {
                 if (response.status === 422) {
                     const err = await response.json();
                     spent = err.secondsSpent ?? spent;
-                    markBtn.style.opacity = '1';
-                    refreshGate();
+                    markBtn.style.opacity = '1'; refreshGate();
                     if (hint) hint.textContent = err.error;
                     return null;
                 }
@@ -523,18 +549,17 @@
             })
             .then(data => {
                 if (!data) return;
-
                 completed = !!data.completed;
-                markBtn.style.opacity = '1';
-                refreshGate();
+                markBtn.style.opacity = '1'; refreshGate();
 
                 const progressBar = document.getElementById('progress-bar');
                 const progressPercent = document.getElementById('progress-percent');
                 const completedCount = document.getElementById('completed-count');
-
+                const totalCount = document.getElementById('total-count');
                 if (progressBar) progressBar.style.width = data.progressPercent + '%';
                 if (progressPercent) progressPercent.textContent = data.progressPercent + '%';
                 if (completedCount) completedCount.textContent = data.completedCount;
+                if (totalCount && data.totalCount !== undefined) totalCount.textContent = data.totalCount;
 
                 const certificateLink = document.getElementById('certificate-link');
                 if (certificateLink) certificateLink.classList.toggle('hidden', data.progressPercent < 100);
@@ -543,19 +568,13 @@
                 if (sidebarLink) {
                     const checkmarkSpan = sidebarLink.querySelector('span.flex-shrink-0');
                     if (checkmarkSpan) {
-                        if (data.completed) {
-                            checkmarkSpan.innerHTML = `<svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>`;
-                        } else {
-                            checkmarkSpan.innerHTML = `<div class="w-5 h-5 border-2 border-gray-300 rounded-full"></div>`;
-                        }
+                        checkmarkSpan.innerHTML = data.completed
+                            ? `<svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>`
+                            : `<div class="w-5 h-5 border-2 border-gray-300 rounded-full"></div>`;
                     }
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                markBtn.style.opacity = '1';
-                refreshGate();
-            });
+            .catch(error => { console.error('Error:', error); markBtn.style.opacity = '1'; refreshGate(); });
         });
     });
 </script>

@@ -23,9 +23,8 @@
                     <div class="flex justify-between h-16 items-center">
                         {{-- Logo & Brand --}}
                         <a href="{{ url('/') }}" class="flex items-center gap-3 group">
-                            <div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center group-hover:scale-105 transition-transform">
-                                <span class="text-white font-bold text-lg">S</span>
-                            </div>
+                            <img src="{{ asset('images/logo.png') }}" alt="SACS Computers" class="w-10 h-10 rounded-xl object-contain bg-white group-hover:scale-105 transition-transform">
+
                             <div class="leading-tight">
                                 <span class="text-white font-bold text-xl">SACS</span>
                                 <span class="text-secondary-light text-xs block -mt-1 tracking-wide">Computers</span>
@@ -132,9 +131,8 @@
                     <div class="grid gap-8 md:grid-cols-4">
                         <div class="md:col-span-2">
                             <div class="flex items-center gap-3 mb-4">
-                                <div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-                                    <span class="text-white font-bold">S</span>
-                                </div>
+                                <img src="{{ asset('images/logo.png') }}" alt="SACS Computers" class="w-10 h-10 rounded-xl object-contain bg-white">
+
                                 <div class="leading-tight">
                                     <span class="text-white font-bold text-lg">SACS Computers</span>
                                     <span class="text-secondary-light text-xs block -mt-0.5">Learning Platform</span>

@@ -83,8 +83,11 @@ class LearningTest extends TestCase
         ]);
         $this->satisfyTime($user, $lesson, $enrollment);
 
-        // Mark complete
+        // Mark complete after minimum lesson time has elapsed
         $this->actingAs($user)
+            ->withSession([
+                "lesson_start_{$lesson->id}" => now()->subMinutes(2)->toIso8601String(),
+            ])
             ->post(route('learning.toggle-complete', [$course->slug, $lesson->id]))
             ->assertOk()
             ->assertJson(['completed' => true, 'progressPercent' => 100]);
@@ -103,6 +106,29 @@ class LearningTest extends TestCase
 
         $this->assertDatabaseMissing('lesson_completions', [
             'user_id' => $user->id,
+            'lesson_id' => $lesson->id,
+        ]);
+    }
+
+    public function test_toggle_complete_blocked_before_minimum_lesson_time(): void
+    {
+        [$course, $lesson] = $this->courseWithLesson();
+        $user = User::factory()->create();
+        Enrollment::factory()->create([
+            'user_id'   => $user->id,
+            'course_id' => $course->id,
+        ]);
+
+        $this->actingAs($user)
+            ->withSession([
+                "lesson_start_{$lesson->id}" => now()->subSeconds(10)->toIso8601String(),
+            ])
+            ->post(route('learning.toggle-complete', [$course->slug, $lesson->id]))
+            ->assertStatus(422)
+            ->assertJsonStructure(['error']);
+
+        $this->assertDatabaseMissing('lesson_completions', [
+            'user_id'   => $user->id,
             'lesson_id' => $lesson->id,
         ]);
     }

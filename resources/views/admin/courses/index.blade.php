@@ -45,6 +45,7 @@
                         <td class="px-6 py-4 text-sm space-x-2">
                             <a href="{{ route('admin.courses.curriculum', $course) }}" class="text-blue-600 hover:text-blue-800">Curriculum</a>
                             <a href="{{ route('admin.sessions.index', $course) }}" class="text-green-600 hover:text-green-800">Sessions</a>
+                            <a href="{{ route('admin.quizzes.index', $course) }}" class="text-purple-600 hover:text-purple-800">Quizzes</a>
                             <a href="{{ route('admin.courses.edit', $course) }}" class="text-gray-600 hover:text-gray-800">Edit</a>
                             <form action="{{ route('admin.courses.destroy', $course) }}" method="POST" class="inline" onsubmit="return confirm('Delete this course?')">
                                 @csrf

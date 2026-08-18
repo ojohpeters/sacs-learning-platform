@@ -71,6 +71,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/learn/{course:slug}', [LearningController::class, 'show'])->name('learning.course');
     Route::get('/learn/{course:slug}/live-sessions', [LearningController::class, 'sessions'])->name('learning.sessions');
     Route::get('/learn/{course:slug}/lesson/{lesson}', [LearningController::class, 'showLesson'])->name('learning.lesson');
+    Route::get('/learn/{course:slug}/quiz/{quiz}', [App\Http\Controllers\QuizController::class, 'show'])->name('quiz.show');
+    Route::post('/learn/{course:slug}/quiz/{quiz}/attempt/{attempt}/save', [App\Http\Controllers\QuizController::class, 'saveAnswer'])->name('quiz.save-answer');
+    Route::post('/learn/{course:slug}/quiz/{quiz}/attempt/{attempt}/submit', [App\Http\Controllers\QuizController::class, 'submit'])->name('quiz.submit');
+    Route::get('/learn/{course:slug}/quiz/{quiz}/attempt/{attempt}/result', [App\Http\Controllers\QuizController::class, 'result'])->name('quiz.result');
+    Route::get('/learn/{course:slug}/quiz/{quiz}/retake', [App\Http\Controllers\QuizController::class, 'retake'])->name('quiz.retake');
 
     Route::post('/learn/{course:slug}/lesson/{lesson}/complete', [LearningController::class, 'toggleComplete'])->name('learning.toggle-complete');
     Route::post('/learn/{course:slug}/lesson/{lesson}/heartbeat', [LearningController::class, 'heartbeat'])->name('learning.heartbeat');
@@ -100,6 +105,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/sections/{section}/lessons', [AdminLessonController::class, 'store'])->name('lessons.store');
     Route::put('/lessons/{lesson}', [AdminLessonController::class, 'update'])->name('lessons.update');
     Route::delete('/lessons/{lesson}', [AdminLessonController::class, 'destroy'])->name('lessons.destroy');
+
+    // Quizzes
+    Route::get('/courses/{course}/quizzes', [App\Http\Controllers\Admin\QuizController::class, 'index'])->name('quizzes.index');
+    Route::get('/sections/{section}/quizzes/create', [App\Http\Controllers\Admin\QuizController::class, 'create'])->name('quizzes.create');
+    Route::post('/sections/{section}/quizzes', [App\Http\Controllers\Admin\QuizController::class, 'store'])->name('quizzes.store');
+    Route::get('/quizzes/{quiz}/edit', [App\Http\Controllers\Admin\QuizController::class, 'edit'])->name('quizzes.edit');
+    Route::put('/quizzes/{quiz}', [App\Http\Controllers\Admin\QuizController::class, 'update'])->name('quizzes.update');
+    Route::delete('/quizzes/{quiz}', [App\Http\Controllers\Admin\QuizController::class, 'destroy'])->name('quizzes.destroy');
+    Route::post('/quizzes/{quiz}/questions', [App\Http\Controllers\Admin\QuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
+    Route::put('/questions/{question}', [App\Http\Controllers\Admin\QuizController::class, 'updateQuestion'])->name('quizzes.questions.update');
+    Route::delete('/questions/{question}', [App\Http\Controllers\Admin\QuizController::class, 'destroyQuestion'])->name('quizzes.questions.destroy');
 
     // Sessions
     Route::get('/courses/{course}/sessions', [SessionController::class, 'index'])->name('sessions.index');

@@ -39,9 +39,8 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex justify-between h-16 items-center">
                 <a href="/" class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-                        <span class="text-accent font-bold text-lg">S</span>
-                    </div>
+                    <img src="{{ asset('images/logo.png') }}" alt="SACS Computers" class="w-9 h-9 rounded-lg object-contain">
+
                     <div class="leading-none">
                         <span class="text-primary font-bold text-lg">SACS</span>
                         <span class="text-gray-500 text-[11px] block mt-0.5 tracking-wide uppercase">Computers</span>
@@ -214,9 +213,8 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-                        <span class="text-white font-bold">S</span>
-                    </div>
+                    <img src="{{ asset('images/logo.png') }}" alt="SACS Computers" class="w-9 h-9 rounded-lg object-contain bg-white">
+
                     <div class="leading-none">
                         <span class="text-white font-bold">SACS Computers</span>
                         <span class="text-gray-500 text-xs block mt-0.5">Learning Platform</span>

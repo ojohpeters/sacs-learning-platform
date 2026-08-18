@@ -46,6 +46,8 @@ class CourseManagementTest extends TestCase
                 'short_description' => 'A short description.',
                 'full_description' => 'A much longer description of the course.',
                 'price' => 50000,
+                'async_price' => 15000,
+                'lesson_min_minutes' => 1,
                 'is_published' => '1',
             ])
             ->assertRedirect(route('admin.courses.index'));
@@ -69,6 +71,8 @@ class CourseManagementTest extends TestCase
                 'short_description' => 'Short.',
                 'full_description' => 'Longer description.',
                 'price' => 10000,
+                'async_price' => 15000,
+                'lesson_min_minutes' => 1,
             ])
             ->assertRedirect(route('admin.courses.index'));
 

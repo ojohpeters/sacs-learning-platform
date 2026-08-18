@@ -71,7 +71,7 @@ class CheckoutTest extends TestCase
 
     public function test_authenticated_user_sees_checkout_page(): void
     {
-        $course = Course::factory()->create(['price' => 100000]);
+        $course = Course::factory()->create(['price' => 100000, 'async_price' => 79000]);
         $user = User::factory()->create();
 
         $this->actingAs($user)
@@ -97,7 +97,7 @@ class CheckoutTest extends TestCase
             ]),
         ]);
 
-        $course = Course::factory()->create(['price' => 100000]);
+        $course = Course::factory()->create(['price' => 100000, 'async_price' => 79000]);
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)
@@ -127,7 +127,7 @@ class CheckoutTest extends TestCase
             ], 401),
         ]);
 
-        $course = Course::factory()->create(['price' => 100000]);
+        $course = Course::factory()->create(['price' => 100000, 'async_price' => 79000]);
         $user = User::factory()->create();
 
         $this->actingAs($user)
@@ -176,7 +176,7 @@ class CheckoutTest extends TestCase
         config(['services.paystack.fake' => true]);
         Mail::fake();
 
-        $course = Course::factory()->create(['price' => 100000]);
+        $course = Course::factory()->create(['price' => 100000, 'async_price' => 79000]);
         $user = User::factory()->create();
 
         $this->actingAs($user)
@@ -207,7 +207,7 @@ class CheckoutTest extends TestCase
     {
         config(['services.paystack.fake' => true]);
 
-        $course = Course::factory()->create(['price' => 100000]);
+        $course = Course::factory()->create(['price' => 100000, 'async_price' => 79000]);
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)

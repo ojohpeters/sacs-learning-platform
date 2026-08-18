@@ -17,9 +17,8 @@
             {{-- Logo --}}
             <div class="mb-8 text-center">
                 <a href="{{ url('/') }}" class="inline-block">
-                    <div class="w-16 h-16 rounded-xl bg-primary flex items-center justify-center mx-auto mb-3">
-                        <span class="text-accent font-bold text-2xl">S</span>
-                    </div>
+                    <img src="{{ asset('images/logo.png') }}" alt="SACS Computers" class="w-16 h-16 rounded-xl object-contain mx-auto mb-3">
+
                     <h2 class="text-xl font-bold text-primary">SACS Computers</h2>
                     <p class="text-sm text-gray-500">Learning Platform</p>
                 </a>

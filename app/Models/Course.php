@@ -7,19 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 
 class Course extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'title',
-        'slug',
-        'short_description',
-        'full_description',
-        'price',
-        'thumbnail_path',
-        'is_published',
+        'title', 'slug', 'short_description', 'full_description',
+        'price', 'async_price', 'lesson_min_minutes', 'thumbnail_path', 'is_published',
     ];
 
     public function sections(): HasMany
@@ -59,15 +56,40 @@ class Course extends Model
     }
 
     /**
-     * Get the Asynchronous (Self-Paced) price.
+     * Get the Asynchronous (Self-Paced) price. Reads the raw stored value
+     * ($value), falling back to a default when it hasn't been set.
      */
-    public function getAsyncPriceAttribute(): float
+    public function getAsyncPriceAttribute($value): float
     {
-        return max($this->price - 25000 + 4000, 0);
+        return $value !== null ? (float) $value : 15000;
     }
 
     public function sessions(): HasMany
     {
         return $this->hasMany(Session::class);
+    }
+
+    public function quizzes()
+    {
+        return Quiz::whereIn('section_id', $this->sections()->pluck('id'));
+    }
+
+    public function quizAttempts()
+    {
+        return QuizAttempt::whereIn('quiz_id', $this->quizzes()->pluck('id'));
+    }
+
+    public function finalExam()
+    {
+        return Quiz::whereIn('section_id', $this->sections()->pluck('id'))
+            ->where('type', 'final_exam')
+            ->first();
+    }
+
+    public function sectionQuizzes()
+    {
+        return Quiz::whereIn('section_id', $this->sections()->pluck('id'))
+            ->where('type', 'section_quiz')
+            ->get();
     }
 }
